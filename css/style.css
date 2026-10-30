@@ -5,6 +5,7 @@
   --ink-soft: #5e6f66;
   --ghost: #b7ae9c;
   --gold: #a9823a;
+  --frame: rgb(169 130 58 / 0.55);
   --miss: #c0574a;
   --miss-bg: #f3d9d2;
   --line: #ddd3bf;
@@ -25,6 +26,8 @@
     --ink-soft: #9aa69f;
     --ghost: #5d6863;
     --gold: #cda85e;
+  --frame: rgb(205 168 94 / 0.45);
+    --frame: rgb(205 168 94 / 0.45);
     --miss: #e48a7c;
     --miss-bg: #3d2421;
     --line: #2a3431;
@@ -41,6 +44,7 @@
   --ink-soft: #9aa69f;
   --ghost: #5d6863;
   --gold: #cda85e;
+  --frame: rgb(205 168 94 / 0.45);
   --miss: #e48a7c;
   --miss-bg: #3d2421;
   --line: #2a3431;
@@ -154,6 +158,16 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
   align-items: center;
   text-align: center;
   transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+/* Mushaf frame: a thin gold double rule around the ayah being typed and
+   the surah score page */
+.current, .score {
+  padding: clamp(24px, 4vw, 40px) clamp(16px, 4vw, 40px);
+  border: 1px solid var(--frame);
+  outline: 1px solid var(--frame);
+  outline-offset: 5px;
+  border-radius: 3px;
 }
 .current.leaving { opacity: 0; transform: translateY(-10px); }
 .current.moved { visibility: hidden; }
@@ -291,7 +305,6 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  padding: 8px 0 4px;
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 .score.arriving { opacity: 0; transform: translateY(-12px); }
@@ -616,3 +629,6 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
 }
 
 [hidden] { display: none !important; }
+
+/* Flying copies must never widen the page */
+body { overflow-x: clip; }

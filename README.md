@@ -9,7 +9,8 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 - **Pick a translation** on first visit: Bahasa Melayu (Abdullah Muhammad Basmeih), English (Saheeh International) or Bahasa Indonesia. Change it any time in settings.
 - **Forgiving typing.** Capital letters and accents don't matter, punctuation fills in by itself and footnote numbers are removed. Words in brackets, like Saheeh International's "[all] praise", are typed too, or can be skipped in settings.
 - **Enter or Space to continue.** When an ayah is fully typed its number fills with gold and a small ↵ key appears at the end; Enter, Space or a tap carries on. Turn on auto-continue in settings to skip this.
-- **Finished ayat** glide down below the one you're typing, newest first, before the next ayah appears. The list clears when a new surah starts.
+- **Finished ayat** glide down below the one you're typing, newest first, reflowing into the smaller list layout as they move. The list clears when a new surah starts.
+- **Mushaf frame:** a thin gold double rule around the ayah being typed.
 - **Surah score page.** Finishing a surah shows its words, words per minute, accuracy and typing time.
 - **Typing time.** A quiet clock in the header counts time spent typing, pausing after 5 seconds without a keystroke. Tap it for "My progress": total time, ayat typed, surahs finished and time per surah, so you can see how long the whole Quran took.
 - **Calm to type in.** Letters ink in softly, a gold caret glides along under the next letter, and the header and footer fade away while you type (move the mouse to bring them back).

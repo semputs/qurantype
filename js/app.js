@@ -532,8 +532,6 @@ function moveIntoTrail() {
     }
   }
 
-  const from = el.current.getBoundingClientRect();
-  const to = item.getBoundingClientRect();
   const done = () => {
     el.current.classList.add("moved");
     item.classList.remove("landing");
@@ -543,9 +541,14 @@ function moveIntoTrail() {
     return Promise.resolve();
   }
 
-  // A copy of the finished ayah flies down and shrinks into the trail.
+  // The finished ayah flies down while its text reflows into the trail's
+  // narrower, smaller layout: a copy of the old layout shrinks toward the
+  // trail and fades out as the new layout grows out of it and fades in, so
+  // the change of line breaks happens mid-flight.
+  const from = el.current.getBoundingClientRect();
   const ghost = el.current.cloneNode(true);
   ghost.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
+  ghost.querySelectorAll(".caret, .catcher").forEach((n) => n.remove());
   ghost.removeAttribute("id");
   ghost.classList.add("ghost");
   Object.assign(ghost.style, {
@@ -555,24 +558,52 @@ function moveIntoTrail() {
   });
   document.body.append(ghost);
   el.current.classList.add("moved");
+  item.classList.remove("landing");
 
-  const scale = Math.min(1, Math.max(0.45, to.height / from.height));
-  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-  const dy = to.top - from.top;
-  const flight = ghost.animate(
-    [
-      { transform: "none", opacity: 1 },
-      { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0.55 },
-    ],
-    { duration: 620, easing: EASE, fill: "forwards" },
+  const timing = { duration: 700, easing: EASE, fill: "both" };
+  const out = [{ opacity: 1 }, { opacity: 1, offset: 0.2 }, { opacity: 0, offset: 0.75 }, { opacity: 0 }];
+  const into = [{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1, offset: 0.8 }, { opacity: 1 }];
+  const animations = [];
+  const pairs = [
+    [ghost.querySelector(".arabic"), item.querySelector(".trail-arabic")],
+    [ghost.querySelector(".translation"), item.querySelector(".trail-text")],
+  ];
+  for (const [old, now] of pairs) {
+    const a = old.getBoundingClientRect();
+    const b = now.getBoundingClientRect();
+    const scale = parseFloat(getComputedStyle(now).fontSize) / parseFloat(getComputedStyle(old).fontSize);
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+    const dy = b.top - a.top;
+    old.style.transformOrigin = now.style.transformOrigin = "top center";
+    animations.push(
+      old.animate(
+        [{ transform: "none" }, { transform: `translate(${dx}px, ${dy}px) scale(${scale})` }],
+        timing,
+      ),
+      old.animate(out, timing),
+      now.animate(
+        [{ transform: `translate(${-dx}px, ${-dy}px) scale(${1 / scale})` }, { transform: "none" }],
+        timing,
+      ),
+      now.animate(into, timing),
+    );
+  }
+  // The mushaf frame stays with the typing area; the copy leaves it behind.
+  const frameColor = getComputedStyle(ghost).borderTopColor;
+  animations.push(
+    ghost.animate(
+      [{ borderColor: frameColor, outlineColor: frameColor }, { borderColor: "transparent", outlineColor: "transparent" }],
+      { duration: 250, fill: "forwards" },
+    ),
+    item.animate([{ borderTopColor: "transparent" }, { borderTopColor: "transparent", offset: 0.4 }, {}], timing),
   );
-  return flight.finished.then(() => {
-    item.classList.remove("landing");
-    const fade = ghost.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 180, fill: "forwards" });
-    return fade.finished.then(() => {
-      ghost.remove();
-      done();
-    });
+  ghost.querySelectorAll(".basmalah").forEach((n) => animations.push(n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" })));
+  animations.push(item.querySelector(".trail-ref").animate(into, timing));
+
+  return Promise.all(animations.map((anim) => anim.finished)).then(() => {
+    animations.forEach((anim) => anim.cancel());
+    ghost.remove();
+    done();
   });
 }
 
