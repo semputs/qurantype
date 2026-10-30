@@ -42,28 +42,31 @@
   </header>
 
   <main class="page" id="page">
-    <section class="current" id="current">
-      <p class="basmalah" id="basmalah" lang="ar" dir="rtl" hidden>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
-      <p class="arabic" id="arabic" lang="ar" dir="rtl"></p>
-      <div class="typing" id="typing">
-        <p class="translation" id="translation" aria-live="off"></p>
-        <span class="caret" id="caret" aria-hidden="true"></span>
-        <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
-               autocapitalize="off" spellcheck="false" enterkeyhint="next" aria-label="Type the translation here">
-      </div>
-    </section>
-    <section class="score" id="score" hidden aria-live="polite">
-      <p class="score-arabic" id="score-arabic" lang="ar" dir="rtl"></p>
-      <h2 class="score-title" id="score-title"></h2>
-      <div class="score-stats">
-        <div class="score-stat"><span class="score-value" id="score-words">0</span><span class="score-label">words</span></div>
-        <div class="score-stat"><span class="score-value" id="score-wpm">0</span><span class="score-label">words per minute</span></div>
-        <div class="score-stat"><span class="score-value" id="score-accuracy">0%</span><span class="score-label">accuracy</span></div>
-        <div class="score-stat"><span class="score-value" id="score-time">0:00</span><span class="score-label">typing time</span></div>
-      </div>
-      <p class="score-note" id="score-note" hidden></p>
-      <button class="button score-next" id="score-next" type="button"></button>
-    </section>
+    <div class="stage" id="stage">
+      <svg class="illumination" id="illumination" aria-hidden="true"></svg>
+      <section class="current" id="current">
+        <p class="basmalah" id="basmalah" lang="ar" dir="rtl" hidden>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+        <p class="arabic" id="arabic" lang="ar" dir="rtl"></p>
+        <div class="typing" id="typing">
+          <p class="translation" id="translation" aria-live="off"></p>
+          <span class="caret" id="caret" aria-hidden="true"></span>
+          <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
+                 autocapitalize="off" spellcheck="false" enterkeyhint="next" aria-label="Type the translation here">
+        </div>
+      </section>
+      <section class="score" id="score" hidden aria-live="polite">
+        <p class="score-arabic" id="score-arabic" lang="ar" dir="rtl"></p>
+        <h2 class="score-title" id="score-title"></h2>
+        <div class="score-stats">
+          <div class="score-stat"><span class="score-value" id="score-words">0</span><span class="score-label">words</span></div>
+          <div class="score-stat"><span class="score-value" id="score-wpm">0</span><span class="score-label">words per minute</span></div>
+          <div class="score-stat"><span class="score-value" id="score-accuracy">0%</span><span class="score-label">accuracy</span></div>
+          <div class="score-stat"><span class="score-value" id="score-time">0:00</span><span class="score-label">typing time</span></div>
+        </div>
+        <p class="score-note" id="score-note" hidden></p>
+        <button class="button score-next" id="score-next" type="button"></button>
+      </section>
+    </div>
     <p class="hint" id="hint">Start typing to begin. Punctuation fills in by itself.</p>
     <p class="status" id="status" role="status" hidden></p>
     <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>

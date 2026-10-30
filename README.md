@@ -12,6 +12,7 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 - **Finished ayat** glide down below the one you're typing, newest first, reflowing into the smaller list layout as they move. The list clears when a new surah starts.
 - **Surah score page.** Finishing a surah shows its words, words per minute, accuracy and typing time.
 - **Typing time.** A quiet clock in the header counts time spent typing, pausing after 5 seconds without a keystroke. Tap it for "My progress": total time, ayat typed, surahs finished and time per surah, so you can see how long the whole Quran took.
+- **Illuminated frame** around the ayah being typed and the surah score page: a patterned gold band with a lobed window, corner rosettes and leaf finials, drawn to fit any ayah length.
 - **Calm to type in.** Letters ink in softly, a gold caret glides along under the next letter, and the header and footer fade away while you type (move the mouse to bring them back). The surah name and its "Ayah X of Y" bar stay at the top while you type..
 - **Recitation** plays when you start typing an ayah (can be turned off), with the play button, or with Tab, which replays the current ayah from the start. Default reciter is Mishary Rashid Alafasy; others are in settings.
 - **Resume anywhere.** Your exact position, even mid-ayah, is saved in the browser. No account needed.

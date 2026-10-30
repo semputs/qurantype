@@ -1,5 +1,6 @@
 import { TRANSLATIONS, RECITERS, TOTAL_AYAHS, getSurah, getSurahList } from "./api.js";
 import { buildPlan, matches, filledUpTo, isForgivable } from "./typing.js";
+import { frameBox } from "./frame.js";
 
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -968,5 +969,6 @@ function begin() {
 }
 
 applyTheme();
+frameBox($("stage"), $("illumination"));
 if (state.translation && TRANSLATIONS.some((t) => t.id === state.translation)) begin();
 else showWelcome();
