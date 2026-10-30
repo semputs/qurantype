@@ -761,6 +761,30 @@ body.focus .foot { opacity: 0; pointer-events: none; }
   * { transition: none !important; }
 }
 
+/* Debug: autotype toggle, pinned to the left edge */
+.debug-button {
+  position: fixed;
+  left: 12px;
+  top: 50%;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.debug-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ghost); }
+.debug-button.on { border-style: solid; border-color: var(--gold); color: var(--ink); }
+.debug-button.on .debug-dot { background: var(--miss); animation: blink-space 1s ease-in-out infinite; }
+@media (max-width: 520px) { .debug-button { top: auto; bottom: 12px; transform: none; } }
+
 [hidden] { display: none !important; }
 
 /* Flying copies must never widen the page */

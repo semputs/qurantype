@@ -230,7 +230,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
       render();
       fadeIn();
     });
-    showStageTop();
+    showNewAyah();
 
     busy = false;
     // Reopened on an ayah that was typed but not yet continued from.
@@ -319,14 +319,19 @@ function placeCaret(span) {
   followCaret(span);
 }
 
-// After a long ayah the page may be scrolled down; bring the new ayah's
-// start back into view under the header.
-function showStageTop() {
-  const top = $("stage").getBoundingClientRect().top;
+// Open each new ayah from its top, just under the header. If the Arabic is
+// so long that the caret would start off screen, scroll on to the caret.
+function showNewAyah() {
   const header = document.querySelector(".bar").offsetHeight;
-  if (top >= header) return;
+  let shift = $("stage").getBoundingClientRect().top - header - 16;
+  if (!el.caret.hidden) {
+    const limit = innerHeight - Math.max(140, innerHeight * 0.28);
+    const caretBottom = el.caret.getBoundingClientRect().bottom - shift;
+    if (caretBottom > limit) shift += caretBottom - limit;
+  }
+  if (Math.abs(shift) < 2) return;
   const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  scrollBy({ top: top - header - 16, behavior: smooth ? "smooth" : "auto" });
+  scrollBy({ top: shift, behavior: smooth ? "smooth" : "auto" });
 }
 
 // On long ayat, keep the line being typed in view: once it gets near the
@@ -688,6 +693,38 @@ document.addEventListener("keydown", (e) => {
 // Focus mode: the header and footer fade while typing and come back when
 // the mouse moves or the screen is touched outside the text.
 const enterFocus = () => document.body.classList.add("focus");
+
+// ---- Debug: autotype --------------------------------------------------------
+
+// Types the ayah by itself at 200 words per minute (a word being five
+// characters), presses Enter at the end of each ayah and carries on, so long
+// stretches can be tested quickly. It counts toward typing time and progress.
+const AUTOTYPE_MS = 60000 / (200 * 5);
+let autotype = null;
+let autotypeWait = 0;
+function autotypeStep() {
+  if (busy || !plan) return;
+  if (waiting || scoring) {
+    // Pause a moment on a finished ayah or score page, as a person would.
+    if (++autotypeWait < (scoring ? 30 : 8)) return;
+    autotypeWait = 0;
+    handleKey("\n");
+    return;
+  }
+  const next = plan.stream[state.pos];
+  if (next) handleKey(next.ch);
+}
+$("debug-button").addEventListener("click", () => {
+  if (autotype) {
+    clearInterval(autotype);
+    autotype = null;
+  } else {
+    autotype = setInterval(autotypeStep, AUTOTYPE_MS);
+  }
+  $("debug-button").classList.toggle("on", !!autotype);
+  $("debug-button").setAttribute("aria-pressed", String(!!autotype));
+  focusTyping();
+});
 let lastPointer = null;
 addEventListener("pointermove", (e) => {
   if (lastPointer && Math.hypot(e.clientX - lastPointer.x, e.clientY - lastPointer.y) > 8) {
