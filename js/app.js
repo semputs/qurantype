@@ -620,6 +620,13 @@ el.catcher.addEventListener("compositionend", () => {
   el.catcher.value = "";
 });
 el.catcher.addEventListener("keydown", (e) => {
+  // Tab replays the recitation of the ayah from the start. Shift+Tab still
+  // moves focus out, so keyboard users are not trapped.
+  if (e.key === "Tab" && !e.shiftKey) {
+    e.preventDefault();
+    if (ayah) playAyah();
+    return;
+  }
   if (e.key !== "Enter") return;
   e.preventDefault();
   if (waiting || scoring) handleKey("\n");
@@ -674,7 +681,8 @@ function startRecitation() {
 
 function playAyah() {
   audioFor = ayah.number;
-  audio.src = ayah.audio;
+  if (audio.src !== ayah.audio) audio.src = ayah.audio;
+  audio.currentTime = 0;
   audio.play().catch(() => {});
 }
 
@@ -690,6 +698,7 @@ function updatePlayButton() {
   const playing = !audio.paused && !audio.ended && !audio.error && audioFor === ayah?.number;
   el.play.classList.toggle("playing", playing);
   el.play.setAttribute("aria-label", playing ? "Pause recitation" : "Play recitation");
+  el.play.title = "Play recitation (Tab replays it while typing)";
 }
 ["play", "pause", "ended", "emptied", "error"].forEach((ev) => audio.addEventListener(ev, updatePlayButton));
 
