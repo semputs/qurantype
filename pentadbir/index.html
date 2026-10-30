@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pentadbir · QuranType</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500&display=swap">
+  <link rel="stylesheet" href="/pentadbir/pentadbir.css">
+  <script type="module" src="/pentadbir/pentadbir.js"></script>
+</head>
+<body>
+  <form class="login" id="login" hidden>
+    <h1>Pentadbir</h1>
+    <p>QuranType stats</p>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+    <p class="error" id="login-error" role="alert"></p>
+  </form>
+
+  <main id="report" hidden>
+    <header class="top">
+      <div>
+        <h1>Pentadbir</h1>
+        <p class="muted" id="updated"></p>
+      </div>
+      <div class="actions">
+        <button type="button" id="refresh">Refresh</button>
+        <button type="button" id="logout">Sign out</button>
+      </div>
+    </header>
+
+    <section>
+      <h2>Today <span class="muted" id="today-date"></span></h2>
+      <div class="tiles" id="today"></div>
+    </section>
+
+    <section>
+      <h2>Last 30 days</h2>
+      <div class="charts" id="charts"></div>
+    </section>
+
+    <section>
+      <h2>All time <span class="muted" id="since"></span></h2>
+      <div class="tiles" id="totals"></div>
+    </section>
+
+    <section>
+      <h2>Who and how <span class="muted">last 30 days</span></h2>
+      <div class="splits" id="splits"></div>
+    </section>
+
+    <p class="muted foot">Counted without cookies or saved IP addresses. A visitor is one browser on one day (KL time); the same person on two days counts twice. Visitors with Do Not Track or Global Privacy Control on are not counted.</p>
+  </main>
+</body>
+</html>

@@ -21,6 +21,7 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 - **Continue on another device.** In settings, "Get a sync code" gives three words like "keen red island". Enter them (or open the copied link) on another device and both stay in sync: position, typed ayat, typing time and settings. When both devices changed, the most recent change wins.
 - **Surah index** behind the surah name at the top: every surah with how many ayat you've typed, ticks for finished ones, and "Continue my khatam" to jump to the next untyped ayah. You can open any surah; the khatam only counts ayat you have actually typed.
 - **Progress** bar for the current surah, with ayat left, juz and the share of the Quran typed.
+- **Pentadbir** at `/pentadbir`: a password-protected stats page for the site owner. Visitors per day (new and returning), how many typed, ayat, words and typing time, surahs finished and khatams, average speed and accuracy, translation and reciter choices, device, browser language, referring sites, most typed surahs and sync codes. Only daily totals are saved: no cookies on visitors and no IP addresses; a visitor is told apart within one day by a salted hash whose salt stays in memory and changes at midnight KL time. Do Not Track, Global Privacy Control and `?debug` turn counting off.
 - Light and dark themes (follows your device by default), works on phones.
 
 ## Running it
@@ -40,6 +41,7 @@ The site itself is static: serve the folder as it is. Sync codes also need the s
 
 - Run it as a service: `deploy/qurantype-sync.service` (systemd). It listens on `127.0.0.1:8787` and keeps one JSON file per code in `DATA_DIR`. Back up that folder to keep people's progress.
 - Proxy `/api/` to it from the web server: `deploy/nginx-sync.conf` (nginx, with the Caddy line too).
+- The same server keeps the `/pentadbir` stats in `DATA_DIR/stats` (one JSON file of totals per day, KL time) and reads the page's password from `PENTADBIR_PASSWORD_FILE` (plain text, first line). Changing the password signs everyone out.
 - Unknown codes and new codes are rate-limited per address (30 and 20 an hour), so codes can't be guessed by trying many.
 
 ## Tests
@@ -60,6 +62,8 @@ Runs the sync server tests and the typing rules in `js/typing.js` (what you have
 - `js/api.js`: Al Quran Cloud client, translation and reciter lists
 - `js/sync.js`, `js/words.js`: sync codes in the browser, and the words they're made of
 - `server/sync.js`: the sync server
+- `server/stats.js`, `js/stats.js`: anonymous visitor stats, server and browser side
+- `pentadbir/`: the stats page
 - `deploy/`: service and web server config for the sync server
 
 ## Credits and licence of the content

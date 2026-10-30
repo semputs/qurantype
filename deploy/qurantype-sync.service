@@ -13,6 +13,8 @@ ExecStart=/usr/bin/node server/sync.js
 Environment=PORT=8787
 Environment=HOST=127.0.0.1
 Environment=DATA_DIR=/var/lib/qurantype-sync
+# The /pentadbir password, plain text on its first line, readable by User only.
+Environment=PENTADBIR_PASSWORD_FILE=/etc/qurantype/pentadbir-password
 StateDirectory=qurantype-sync
 Restart=on-failure
 
