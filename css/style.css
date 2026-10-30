@@ -5,7 +5,6 @@
   --ink-soft: #5e6f66;
   --ghost: #b7ae9c;
   --gold: #a9823a;
-  --frame: rgb(169 130 58 / 0.55);
   --miss: #c0574a;
   --miss-bg: #f3d9d2;
   --line: #ddd3bf;
@@ -26,8 +25,6 @@
     --ink-soft: #9aa69f;
     --ghost: #5d6863;
     --gold: #cda85e;
-  --frame: rgb(205 168 94 / 0.45);
-    --frame: rgb(205 168 94 / 0.45);
     --miss: #e48a7c;
     --miss-bg: #3d2421;
     --line: #2a3431;
@@ -44,7 +41,6 @@
   --ink-soft: #9aa69f;
   --ghost: #5d6863;
   --gold: #cda85e;
-  --frame: rgb(205 168 94 / 0.45);
   --miss: #e48a7c;
   --miss-bg: #3d2421;
   --line: #2a3431;
@@ -73,12 +69,17 @@ button, select, input { font: inherit; color: inherit; }
 
 /* Top bar */
 
+/* The header stays at the top while the finished ayat scroll beneath it */
 .bar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 4;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 12px;
   padding: 14px clamp(16px, 4vw, 32px);
+  background: var(--paper);
 }
 
 .wordmark {
@@ -142,10 +143,11 @@ button, select, input { font: inherit; color: inherit; }
 
 .bar-actions { display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
 
-.bar, .foot { transition: opacity 0.6s ease; }
-body.focus .bar { opacity: 0; }
-body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
-.progress-label, .credits { transition: opacity 0.6s ease; }
+.foot { transition: opacity 0.6s ease; }
+/* Focus mode: while typing, only the surah name and its progress stay */
+.wordmark, .bar-actions { transition: opacity 0.6s ease; }
+body.focus .wordmark, body.focus .bar-actions { opacity: 0; }
+body.focus .foot { opacity: 0; pointer-events: none; }
 
 .timer-button {
   display: inline-flex;
@@ -195,15 +197,6 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
-/* Mushaf frame: a thin gold double rule around the ayah being typed and
-   the surah score page */
-.current, .score {
-  padding: clamp(24px, 4vw, 40px) clamp(16px, 4vw, 40px);
-  border: 1px solid var(--frame);
-  outline: 1px solid var(--frame);
-  outline-offset: 5px;
-  border-radius: 3px;
-}
 .current.leaving { opacity: 0; transform: translateY(-10px); }
 .current.moved { visibility: hidden; }
 
@@ -221,7 +214,7 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
-  padding: clamp(24px, 6vh, 72px) 16px 32px;
+  padding: clamp(24px, 6vh, 72px) 16px 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -462,11 +455,17 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
 
 /* Footer */
 
+/* The footer sits on the bottom edge of the screen rather than below the
+   finished ayat, and only shows when the mouse moves */
 .foot {
-  padding: 0 clamp(16px, 4vw, 32px) 18px;
-  max-width: 760px;
-  width: 100%;
-  margin: 0 auto;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 14px max(16px, calc((100vw - 760px) / 2)) calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--paper);
+  box-shadow: 0 -16px 24px -8px var(--paper);
 }
 
 .progress {

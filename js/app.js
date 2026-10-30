@@ -593,13 +593,7 @@ function moveIntoTrail() {
       now.animate(into, timing),
     );
   }
-  // The mushaf frame stays with the typing area; the copy leaves it behind.
-  const frameColor = getComputedStyle(ghost).borderTopColor;
   animations.push(
-    ghost.animate(
-      [{ borderColor: frameColor, outlineColor: frameColor }, { borderColor: "transparent", outlineColor: "transparent" }],
-      { duration: 250, fill: "forwards" },
-    ),
     item.animate([{ borderTopColor: "transparent" }, { borderTopColor: "transparent", offset: 0.4 }, {}], timing),
   );
   ghost.querySelectorAll(".basmalah").forEach((n) => animations.push(n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" })));

@@ -10,10 +10,9 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 - **Forgiving typing.** Capital letters and accents don't matter, punctuation fills in by itself and footnote numbers are removed. Words in brackets, like Saheeh International's "[all] praise", are typed too, or can be skipped in settings.
 - **Enter or Space to continue.** When an ayah is fully typed its number fills with gold and a small ↵ key appears at the end; Enter, Space or a tap carries on. Turn on auto-continue in settings to skip this.
 - **Finished ayat** glide down below the one you're typing, newest first, reflowing into the smaller list layout as they move. The list clears when a new surah starts.
-- **Mushaf frame:** a thin gold double rule around the ayah being typed.
 - **Surah score page.** Finishing a surah shows its words, words per minute, accuracy and typing time.
 - **Typing time.** A quiet clock in the header counts time spent typing, pausing after 5 seconds without a keystroke. Tap it for "My progress": total time, ayat typed, surahs finished and time per surah, so you can see how long the whole Quran took.
-- **Calm to type in.** Letters ink in softly, a gold caret glides along under the next letter, and the header and footer fade away while you type (move the mouse to bring them back).
+- **Calm to type in.** Letters ink in softly, a gold caret glides along under the next letter, and the header and footer fade away while you type (move the mouse to bring them back). The surah name and its "Ayah X of Y" bar stay at the top while you type..
 - **Recitation** plays when you start typing an ayah (can be turned off), or with the play button. Default reciter is Mishary Rashid Alafasy; others are in settings.
 - **Resume anywhere.** Your exact position, even mid-ayah, is saved in the browser. No account needed.
 - **Surah index** behind the surah name at the top: every surah with how many ayat you've typed, ticks for finished ones, and "Continue my khatam" to jump to the next untyped ayah. You can open any surah; the khatam only counts ayat you have actually typed.
