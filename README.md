@@ -53,6 +53,7 @@ Runs the sync server tests and the typing rules in `js/typing.js` (what you have
 ## Layout
 
 - `index.html`: the page and its dialogs
+- `og.jpg`: the 1200×630 link preview image
 - `css/style.css`: all styling, with colour tokens for light and dark
 - `js/app.js`: page behaviour (loading ayat, typing, audio, saving, settings)
 - `js/typing.js`: pure typing rules, no DOM
