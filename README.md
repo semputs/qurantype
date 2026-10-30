@@ -18,6 +18,7 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 - **Calm to type in.** Letters ink in softly, a gold caret glides along under the next letter, and the header and footer fade away while you type (move the mouse to bring them back). The surah name and its "Ayah X of Y" bar stay at the top while you type..
 - **Recitation** plays when you start typing an ayah (can be turned off), with the play button, or with Tab, which replays the current ayah from the start. Default reciter is Mishary Rashid Alafasy; others are in settings.
 - **Resume anywhere.** Your exact position, even mid-ayah, is saved in the browser. No account needed.
+- **Continue on another device.** In settings, "Get a sync code" gives three words like "keen red island". Enter them (or open the copied link) on another device and both stay in sync: position, typed ayat, typing time and settings. When both devices changed, the most recent change wins.
 - **Surah index** behind the surah name at the top: every surah with how many ayat you've typed, ticks for finished ones, and "Continue my khatam" to jump to the next untyped ayah. You can open any surah; the khatam only counts ayat you have actually typed.
 - **Progress** bar for the current surah, with ayat left, juz and the share of the Quran typed.
 - Light and dark themes (follows your device by default), works on phones.
@@ -27,12 +28,19 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 It's a static site with no build step. Serve the folder with any web server:
 
 ```sh
-npm start        # same as: python3 -m http.server 8000
+npm start        # site and sync server on http://localhost:8787
+npm run static   # site only, on http://localhost:8000 (sync codes won't work)
 ```
 
-Then open http://localhost:8000. Opening `index.html` straight from disk won't work because browsers block ES modules on `file://`.
+Opening `index.html` straight from disk won't work because browsers block ES modules on `file://`.
 
-To deploy, upload the files as they are to any static host (a subdomain on semput.com, GitHub Pages, Netlify, etc.).
+### Deploying
+
+The site itself is static: serve the folder as it is. Sync codes also need the small server in `server/sync.js` (Node 20+, no dependencies) running on the same domain under `/api/`:
+
+- Run it as a service: `deploy/qurantype-sync.service` (systemd). It listens on `127.0.0.1:8787` and keeps one JSON file per code in `DATA_DIR`. Back up that folder to keep people's progress.
+- Proxy `/api/` to it from the web server: `deploy/nginx-sync.conf` (nginx, with the Caddy line too).
+- Unknown codes and new codes are rate-limited per address (30 and 20 an hour), so codes can't be guessed by trying many.
 
 ## Tests
 
@@ -40,7 +48,7 @@ To deploy, upload the files as they are to any static host (a subdomain on sempu
 npm test
 ```
 
-Runs the typing rules in `js/typing.js` (what you have to type, what fills in, what counts as a match) with Node's built-in test runner. Node 20 or newer.
+Runs the sync server tests and the typing rules in `js/typing.js` (what you have to type, what fills in, what counts as a match) with Node's built-in test runner. Node 20 or newer.
 
 ## Layout
 
@@ -49,6 +57,9 @@ Runs the typing rules in `js/typing.js` (what you have to type, what fills in, w
 - `js/app.js`: page behaviour (loading ayat, typing, audio, saving, settings)
 - `js/typing.js`: pure typing rules, no DOM
 - `js/api.js`: Al Quran Cloud client, translation and reciter lists
+- `js/sync.js`, `js/words.js`: sync codes in the browser, and the words they're made of
+- `server/sync.js`: the sync server
+- `deploy/`: service and web server config for the sync server
 
 ## Credits and licence of the content
 

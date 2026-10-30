@@ -1,0 +1,20 @@
+# systemd unit for the QuranType sync server.
+# Copy to /etc/systemd/system/, adjust the paths and user, then:
+#   systemctl daemon-reload && systemctl enable --now qurantype-sync
+[Unit]
+Description=QuranType sync server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/qurantype
+ExecStart=/usr/bin/node server/sync.js
+Environment=PORT=8787
+Environment=HOST=127.0.0.1
+Environment=DATA_DIR=/var/lib/qurantype-sync
+StateDirectory=qurantype-sync
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

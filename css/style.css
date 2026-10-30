@@ -727,7 +727,7 @@ body.focus .foot { opacity: 0; pointer-events: none; }
 .choice span { font-size: 0.85rem; color: var(--ink-soft); }
 
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; color: var(--ink-soft); }
-.field select, .field input[type="number"] {
+.field select, .field input[type="number"], .field input[type="text"] {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -735,6 +735,25 @@ body.focus .foot { opacity: 0; pointer-events: none; }
   color: var(--ink);
   font-size: 1rem;
 }
+/* Sync code */
+.sync { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sync .sheet-label { margin: 0; font-size: 0.9rem; font-weight: 500; color: var(--ink); }
+.sync-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.sync-body[hidden] { display: none; }
+.sync-use { display: flex; align-items: flex-end; gap: 8px; width: 100%; }
+.sync-use .field { flex: 1; }
+.sync-code {
+  margin: 0;
+  padding: 10px 16px;
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  background: var(--paper);
+  font-size: 1.3rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.sync-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
 .field-check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); }
 .field-check input { width: 18px; height: 18px; accent-color: var(--gold); }
 

@@ -1,6 +1,7 @@
 import { TRANSLATIONS, RECITERS, TOTAL_AYAHS, getSurah, getSurahList } from "./api.js";
 import { buildPlan, matches, filledUpTo, isForgivable } from "./typing.js";
 import { FRAMES, frameBox } from "./frame.js";
+import { savedCode, rememberCode, showCode, parseCode, linkFor, codeFromLink, createCode, fetchCode, pushState } from "./sync.js";
 
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -57,6 +58,16 @@ const el = {
   surahIndex: $("surah-index"),
   jumpSurah: $("jump-surah"),
   jumpAyah: $("jump-ayah"),
+  syncOff: $("sync-off"),
+  syncOn: $("sync-on"),
+  syncCreate: $("sync-create"),
+  syncInput: $("sync-input"),
+  syncUse: $("sync-use"),
+  syncCode: $("sync-code"),
+  syncStatus: $("sync-status"),
+  syncCopy: $("sync-copy"),
+  syncLink: $("sync-link"),
+  syncStop: $("sync-stop"),
 };
 
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -86,6 +97,7 @@ const DEFAULTS = {
   run: null, // { surah, chars, misses, words, ms }
   results: {}, // surah number -> { words, wpm, accuracy, ms } from its last finish
   continueHints: 0, // times the "Enter or Space" hint has been shown
+  savedAt: 0, // when anything above last changed, so the newest copy wins when syncing
 };
 
 function loadState() {
@@ -97,7 +109,17 @@ function loadState() {
 }
 
 const state = loadState();
+// savedAt only moves when something really changed, so just opening the page
+// on a device never makes its copy look newer than the other device's.
+const withoutStamp = () => JSON.stringify({ ...state, savedAt: 0 });
+let lastSaved = withoutStamp();
 function saveNow() {
+  const now = withoutStamp();
+  if (now !== lastSaved) {
+    lastSaved = now;
+    state.savedAt = Date.now();
+    schedulePush();
+  }
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
   } catch {
@@ -109,7 +131,10 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, 250);
 }
-addEventListener("pagehide", saveNow);
+addEventListener("pagehide", () => {
+  saveNow();
+  if (pushTimer) pushNow({ keepalive: true });
+});
 
 // ---- Typed ayat -------------------------------------------------------------
 
@@ -885,6 +910,7 @@ el.settingsButton.addEventListener("click", () => {
   el.setSkipBrackets.checked = state.skipBrackets;
   el.setTheme.value = state.theme;
   el.setFrame.value = state.frame;
+  renderSync();
   el.settings.showModal();
 });
 
@@ -922,6 +948,157 @@ el.setTheme.addEventListener("change", () => {
   state.theme = el.setTheme.value;
   applyTheme();
   save();
+});
+
+// ---- Sync code ------------------------------------------------------------------
+
+let syncCode = savedCode();
+let pushTimer = null;
+let syncedAt = 0;
+let started = false; // begin() has run and an ayah is on screen
+
+function schedulePush() {
+  if (!syncCode) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushNow, 2000);
+}
+
+async function pushNow({ keepalive = false } = {}) {
+  clearTimeout(pushTimer);
+  pushTimer = null;
+  if (!syncCode) return;
+  try {
+    const result = await pushState(syncCode, state, { keepalive });
+    if (result.newer) useRemote(result.newer);
+    else if (result.gone) stopSync("This sync code no longer exists on the server.");
+    else syncedAt = Date.now();
+  } catch {
+    // Offline: try again with the next change, or when the page comes back into view.
+    syncedAt = 0;
+  }
+  renderSync();
+}
+
+// Takes the progress saved under the code and carries on from its place.
+function useRemote(remote) {
+  if (!remote?.state?.translation) return;
+  for (const key of Object.keys(state)) delete state[key];
+  Object.assign(state, DEFAULTS, remote.state, { savedAt: remote.savedAt });
+  lastSaved = withoutStamp();
+  lastKeyAt = 0;
+  saveNow();
+  syncedAt = Date.now();
+  applyTheme();
+  setFrame(state.frame);
+  clearTrail();
+  updateTimer();
+  if (el.welcome.open) el.welcome.close(state.translation);
+  else if (started) loadAyah(state.surah, state.ayah, state.pos);
+}
+
+// Picks up changes made on the other device, or sends ours if they're newer.
+async function pull(timeout) {
+  if (!syncCode) return;
+  try {
+    const remote = await fetchCode(syncCode, timeout);
+    if (!remote) return stopSync("This sync code no longer exists on the server.");
+    if (remote.savedAt > state.savedAt) useRemote(remote);
+    else if (remote.savedAt < state.savedAt) await pushNow();
+    else syncedAt = Date.now();
+  } catch {
+    syncedAt = 0;
+  }
+  renderSync();
+}
+
+function stopSync(message) {
+  syncCode = null;
+  rememberCode(null);
+  clearTimeout(pushTimer);
+  pushTimer = null;
+  renderSync();
+  if (message) showStatus(message);
+}
+
+function renderSync(note) {
+  el.syncOff.hidden = !!syncCode;
+  el.syncOn.hidden = !syncCode;
+  if (!syncCode) return;
+  el.syncCode.textContent = showCode(syncCode);
+  el.syncStatus.textContent = note
+    ?? (syncedAt ? "Synced. Enter these words on your other device to carry on there." : "Not synced yet. It will try again when you're online.");
+}
+
+// Switches this device to a code from another device.
+async function joinCode(code) {
+  const remote = await fetchCode(code);
+  if (!remote) throw new Error("No progress is saved under those words. Check the spelling?");
+  if (code !== syncCode && typedTotal() > 0 && remote.savedAt < state.savedAt
+      && !confirm("This device has its own progress. Replace it with the progress saved under this code?")) {
+    return false;
+  }
+  syncCode = code;
+  rememberCode(code);
+  useRemote(remote);
+  renderSync();
+  return true;
+}
+
+el.syncCreate.addEventListener("click", async () => {
+  el.syncCreate.disabled = true;
+  try {
+    saveNow();
+    const { code } = await createCode(state);
+    syncCode = code;
+    rememberCode(code);
+    syncedAt = Date.now();
+    renderSync();
+  } catch (err) {
+    renderSync();
+    alert(err.message);
+  } finally {
+    el.syncCreate.disabled = false;
+  }
+});
+
+async function useTypedCode() {
+  const code = parseCode(el.syncInput.value);
+  if (!code) {
+    alert("A sync code is three words, like \"quiet white seal\".");
+    return;
+  }
+  el.syncUse.disabled = true;
+  try {
+    if (await joinCode(code)) el.syncInput.value = "";
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    el.syncUse.disabled = false;
+  }
+}
+el.syncUse.addEventListener("click", useTypedCode);
+el.syncInput.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  useTypedCode();
+});
+
+async function copy(text, done) {
+  try {
+    await navigator.clipboard.writeText(text);
+    renderSync(done);
+  } catch {
+    prompt("Copy this:", text);
+  }
+}
+el.syncCopy.addEventListener("click", () => copy(showCode(syncCode), "Copied the words."));
+el.syncLink.addEventListener("click", () => copy(linkFor(syncCode), "Copied a link. Opening it on another device carries on there."));
+el.syncStop.addEventListener("click", () => {
+  if (confirm("Stop syncing on this device? Your progress stays here, and the code still works on your other devices.")) stopSync();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") pull();
 });
 
 // ---- Surah index ------------------------------------------------------------
@@ -1035,6 +1212,7 @@ function showWelcome() {
 }
 
 function begin() {
+  started = true;
   if (state.pos > 0 || state.surah > 1 || state.ayah > 1) {
     el.hint.textContent = "Welcome back. Carry on typing from where you stopped.";
   }
@@ -1045,5 +1223,18 @@ function begin() {
 
 applyTheme();
 const setFrame = frameBox($("stage"), $("illumination"), state.frame);
-if (state.translation && TRANSLATIONS.some((t) => t.id === state.translation)) begin();
-else showWelcome();
+
+async function start() {
+  // Opened from a sync link, or synced before: pick up the latest progress first.
+  const linked = codeFromLink();
+  try {
+    if (linked && linked !== syncCode) await joinCode(linked);
+    else if (syncCode) await pull(4000);
+  } catch (err) {
+    showStatus(err.message);
+  }
+  if (state.translation && TRANSLATIONS.some((t) => t.id === state.translation)) {
+    begin();
+  } else showWelcome();
+}
+start();
