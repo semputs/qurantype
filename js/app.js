@@ -221,8 +221,10 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
       state.run = { surah: surah.number, chars: 0, misses: 0, words: 0, ms: 0 };
     }
     save();
-    render();
-    fadeIn();
+    keepTrailSteady(() => {
+      render();
+      fadeIn();
+    });
 
     busy = false;
     // Reopened on an ayah that was typed but not yet continued from.
@@ -450,8 +452,10 @@ function showScore() {
   el.scoreNext.dataset.next = surah.number < 114 ? surah.number + 1 : 1;
   el.scoreNext.insertAdjacentHTML("beforeend", ' <kbd>↵</kbd>');
 
-  el.current.hidden = true;
-  el.score.hidden = false;
+  keepTrailSteady(() => {
+    el.current.hidden = true;
+    el.score.hidden = false;
+  });
   el.score.classList.add("arriving");
   requestAnimationFrame(() => requestAnimationFrame(() => el.score.classList.remove("arriving")));
   el.progressFill.style.width = "100%";
@@ -499,11 +503,34 @@ function makeTrailItem() {
   return item;
 }
 
+const EASE = "cubic-bezier(.5, 0, .2, 1)";
+
+// When something above the trail changes height, slide the trail to its new
+// place instead of letting it jump.
+function keepTrailSteady(change) {
+  const before = el.trail.getBoundingClientRect().top;
+  change();
+  const shift = before - el.trail.getBoundingClientRect().top;
+  if (shift && !reducedMotion.matches && el.trail.children.length) {
+    el.trail.animate([{ transform: `translateY(${shift}px)` }, { transform: "none" }], { duration: 450, easing: EASE });
+  }
+}
+
 function moveIntoTrail() {
   const item = makeTrailItem();
   item.classList.add("landing");
+  // The earlier ayat slide down together, as one block, to make room.
+  const older = [...el.trail.children];
+  const oldTop = older[0]?.getBoundingClientRect().top;
   el.trail.prepend(item);
   while (el.trail.children.length > TRAIL_LENGTH) el.trail.lastElementChild.remove();
+  if (older.length && !reducedMotion.matches) {
+    const shift = older[0].getBoundingClientRect().top - oldTop;
+    for (const li of older) {
+      if (!li.isConnected) continue;
+      li.animate([{ transform: `translateY(${-shift}px)` }, { transform: "none" }], { duration: 620, easing: EASE });
+    }
+  }
 
   const from = el.current.getBoundingClientRect();
   const to = item.getBoundingClientRect();
@@ -537,7 +564,7 @@ function moveIntoTrail() {
       { transform: "none", opacity: 1 },
       { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0.55 },
     ],
-    { duration: 620, easing: "cubic-bezier(.5, 0, .2, 1)", fill: "forwards" },
+    { duration: 620, easing: EASE, fill: "forwards" },
   );
   return flight.finished.then(() => {
     item.classList.remove("landing");
