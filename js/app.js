@@ -401,7 +401,9 @@ function waitForContinue() {
   const key = document.createElement("button");
   key.type = "button";
   key.className = "enter-key";
-  key.textContent = "↵";
+  // Two keycaps: Enter, and a space bar that blinks like a caret, so it reads
+  // as "either of these".
+  key.innerHTML = '<span class="keycap">↵</span><span class="keycap keycap-space"><span class="space-mark"></span></span>';
   key.title = "Press Enter or Space to continue";
   key.setAttribute("aria-label", "Continue (Enter or Space)");
   key.addEventListener("click", (e) => {

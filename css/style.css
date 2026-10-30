@@ -339,6 +339,19 @@ body.focus .foot { opacity: 0; pointer-events: none; }
 .enter-key {
   position: relative;
   z-index: 1; /* above the invisible input so it can be tapped */
+  display: inline-flex;
+  gap: 0.3em;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.85em;
+  line-height: 1;
+  vertical-align: 0.1em;
+  cursor: pointer;
+  animation: rise 0.4s ease;
+}
+.keycap {
   display: inline-grid;
   place-items: center;
   min-width: 1.9em;
@@ -349,15 +362,25 @@ body.focus .foot { opacity: 0; pointer-events: none; }
   border-radius: 7px;
   background: var(--sheet);
   color: var(--gold);
-  font: inherit;
-  font-size: 0.85em;
-  line-height: 1;
-  vertical-align: 0.1em;
-  cursor: pointer;
-  animation: rise 0.4s ease;
 }
-.enter-key:hover { border-color: var(--gold); }
-.enter-key.nudge { animation: nudge 0.35s ease; border-color: var(--gold); }
+.keycap-space { min-width: 3.4em; }
+/* The space bar mark blinks gently, like the caret */
+.space-mark {
+  width: 1.7em;
+  height: 0.38em;
+  border: 1.5px solid currentColor;
+  border-top: 0;
+  border-radius: 0 0 2px 2px;
+  transform: translateY(0.12em);
+  animation: blink-space 1.1s ease-in-out infinite;
+}
+@keyframes blink-space { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+.enter-key:hover .keycap { border-color: var(--gold); }
+.enter-key.nudge { animation: nudge 0.35s ease; }
+.enter-key.nudge .keycap { border-color: var(--gold); }
+@media (prefers-reduced-motion: reduce) {
+  .space-mark { animation: none; }
+}
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
 @keyframes nudge { 30% { transform: translateY(-3px); } 60% { transform: translateY(1px); } }
 
