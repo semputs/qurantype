@@ -216,7 +216,11 @@ body.focus .foot { opacity: 0; pointer-events: none; }
   flex-direction: column;
   align-items: center;
   padding: calc(var(--band-width) + clamp(20px, 3.5vw, 36px)) calc(var(--band-width) + clamp(14px, 3.5vw, 36px));
+  padding-top: calc(var(--band-width) + var(--frame-top, 0px) + clamp(20px, 3.5vw, 36px));
+  /* room for crowns and finials that reach outside the frame */
+  margin-block: max(0px, calc(var(--frame-out, 0px) - 18px));
 }
+.stage[data-frame="none"] { padding-inline: 0; }
 .illumination {
   position: absolute;
   inset: 0;
@@ -234,6 +238,41 @@ body.focus .foot { opacity: 0; pointer-events: none; }
 .illumination .leaf-vein { fill: none; stroke: var(--band); stroke-width: 0.9; opacity: 0.9; }
 .illumination .rosette { fill: var(--gold); opacity: 0.75; }
 .illumination .rosette-eye { fill: var(--band); }
+/* Tulip border */
+.illumination .t-band { fill: #1f5c9e; }
+.illumination .t-blush { fill: #f2b8c1; }
+.illumination .t-red { fill: #d8262f; }
+.illumination .t-braid-band { fill: #3b2a14; }
+.illumination .t-braid { fill: none; stroke: #d6a64a; stroke-width: 1.6; }
+.illumination .t-petal { fill: #f6b6c3; stroke: #c71f3a; stroke-width: 1; }
+.illumination .t-heart { fill: #d8262f; }
+.illumination .t-leaf { fill: #2f8a4d; stroke: #1a4a2a; stroke-width: 0.5; }
+.illumination .t-palm { fill: #c9973d; stroke: #6d4b16; stroke-width: 0.6; }
+.illumination .t-dot { fill: #5bb4ea; }
+.illumination .t-stem { stroke: #2f8a4d; stroke-width: 1.4; }
+.illumination .t-tip { fill: #d8262f; }
+.illumination .t-corner { fill: #c9973d; }
+.illumination .t-outline { fill: none; stroke: #173f6e; stroke-width: 1; }
+.illumination .t-window { fill: var(--paper); stroke: #3b2a14; stroke-width: 1; }
+/* Pearl arch */
+.illumination .a-band { fill: #1c2648; }
+.illumination .a-vine { fill: none; stroke: #c99a45; stroke-width: 1.2; stroke-linecap: round; }
+.illumination .a-gem { fill: #3d6fbf; stroke: #c99a45; stroke-width: 0.8; }
+.illumination .a-panel { fill: #f3e8cc; }
+.illumination .a-pearl { fill: url(#pearl); stroke: #d9c79c; stroke-width: 0.6; }
+.illumination .a-ring { fill: none; stroke: url(#gilt); stroke-width: 3; }
+.illumination .a-rule { fill: none; stroke: #c99a45; stroke-width: 1.5; }
+.illumination .a-window { fill: var(--paper); stroke: url(#gilt); stroke-width: 5; }
+/* Jewel bloom and jewel octagon */
+.illumination .j-ink { stroke: #1d1a1a; stroke-width: 1.1; stroke-linejoin: round; }
+.illumination .j-vine { fill: none; stroke: #f6c343; stroke-width: 1.1; }
+.illumination .j-window { fill: var(--paper); stroke: #1d1a1a; stroke-width: 2.5; }
+.illumination .j-window-edge { fill: none; stroke: #f2a71b; stroke-width: 7; }
+/* The bright frames are softened a little in dark mode */
+:root[data-theme="dark"] .stage:not([data-frame="cartouche"]) .illumination { opacity: 0.88; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .stage:not([data-frame="cartouche"]) .illumination { opacity: 0.88; }
+}
 .stage > .current, .stage > .score { position: relative; }
 
 /* The copy of a finished ayah that glides down into the trail */

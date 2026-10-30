@@ -1,6 +1,6 @@
 import { TRANSLATIONS, RECITERS, TOTAL_AYAHS, getSurah, getSurahList } from "./api.js";
 import { buildPlan, matches, filledUpTo, isForgivable } from "./typing.js";
-import { frameBox } from "./frame.js";
+import { FRAMES, frameBox } from "./frame.js";
 
 const $ = (id) => document.getElementById(id);
 const el = {
@@ -43,6 +43,7 @@ const el = {
   setAutoContinue: $("set-auto-continue"),
   setSkipBrackets: $("set-skip-brackets"),
   setTheme: $("set-theme"),
+  setFrame: $("set-frame"),
   stats: $("stats"),
   statTime: $("stat-time"),
   statAyat: $("stat-ayat"),
@@ -70,6 +71,7 @@ const DEFAULTS = {
   autoContinue: false,
   skipBrackets: false,
   theme: "auto",
+  frame: "cartouche",
   surah: 1,
   ayah: 1,
   pos: 0,
@@ -228,6 +230,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
       render();
       fadeIn();
     });
+    showStageTop();
 
     busy = false;
     // Reopened on an ayah that was typed but not yet continued from.
@@ -313,6 +316,29 @@ function placeCaret(span) {
   const top = span.offsetTop + span.offsetHeight - 6;
   el.caret.style.width = `${Math.max(span.offsetWidth, 6)}px`;
   el.caret.style.transform = `translate(${span.offsetLeft}px, ${top}px)`;
+  followCaret(span);
+}
+
+// After a long ayah the page may be scrolled down; bring the new ayah's
+// start back into view under the header.
+function showStageTop() {
+  const top = $("stage").getBoundingClientRect().top;
+  const header = document.querySelector(".bar").offsetHeight;
+  if (top >= header) return;
+  const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  scrollBy({ top: top - header - 16, behavior: smooth ? "smooth" : "auto" });
+}
+
+// On long ayat, keep the line being typed in view: once it gets near the
+// bottom of the screen, scroll so it sits a little above the middle.
+function followCaret(span) {
+  if (state.pos === 0) return; // a new ayah opens at its top, not at the caret
+  const rect = span.getBoundingClientRect();
+  const low = rect.bottom > innerHeight - Math.max(140, innerHeight * 0.28);
+  const high = rect.top < document.querySelector(".bar").offsetHeight + 8;
+  if (!low && !high) return;
+  const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  scrollBy({ top: rect.top - innerHeight * 0.45, behavior: smooth ? "smooth" : "auto" });
 }
 addEventListener("resize", () => plan && updateTyping());
 document.fonts?.ready.then(() => plan && updateTyping());
@@ -809,6 +835,7 @@ function fillSelect(select, items, label) {
 
 fillSelect(el.setTranslation, TRANSLATIONS, (t) => `${t.label} (${t.by})`);
 fillSelect(el.setReciter, RECITERS, (r) => r.label);
+fillSelect(el.setFrame, Object.entries(FRAMES).map(([id, frame]) => ({ id, label: frame.label })), (fr) => fr.label);
 
 el.settingsButton.addEventListener("click", () => {
   el.setTranslation.value = state.translation;
@@ -817,6 +844,7 @@ el.settingsButton.addEventListener("click", () => {
   el.setAutoContinue.checked = state.autoContinue;
   el.setSkipBrackets.checked = state.skipBrackets;
   el.setTheme.value = state.theme;
+  el.setFrame.value = state.frame;
   el.settings.showModal();
 });
 
@@ -844,6 +872,11 @@ el.setSkipBrackets.addEventListener("change", () => {
   state.skipBrackets = el.setSkipBrackets.checked;
   save();
   loadAyah(state.surah, state.ayah, 0);
+});
+el.setFrame.addEventListener("change", () => {
+  state.frame = el.setFrame.value;
+  setFrame(state.frame);
+  save();
 });
 el.setTheme.addEventListener("change", () => {
   state.theme = el.setTheme.value;
@@ -971,6 +1004,6 @@ function begin() {
 }
 
 applyTheme();
-frameBox($("stage"), $("illumination"));
+const setFrame = frameBox($("stage"), $("illumination"), state.frame);
 if (state.translation && TRANSLATIONS.some((t) => t.id === state.translation)) begin();
 else showWelcome();
