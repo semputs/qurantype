@@ -1,0 +1,125 @@
+:root {
+  --paper: #f5efe3;
+  --sheet: #fbf7ef;
+  --ink: #1d3a30;
+  --ink-soft: #5e6f66;
+  --line: #ddd3bf;
+  --bar: #2f6b55;
+  --bar-hover: #a9823a;
+  --miss: #c0574a;
+  --serif: "Literata", Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121816;
+    --sheet: #1a2220;
+    --ink: #e8e1d1;
+    --ink-soft: #9aa69f;
+    --line: #2d3834;
+    --bar: #7fb79c;
+    --bar-hover: #cda85e;
+    --miss: #e48a7c;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 var(--serif);
+}
+h1 { font-size: 1.6rem; font-weight: 500; margin: 0; }
+h2 { font-size: 1.1rem; font-weight: 500; margin: 0 0 0.75rem; }
+.muted { color: var(--ink-soft); font-size: 0.9rem; font-weight: 400; }
+button, input { font: inherit; color: inherit; }
+button {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+button:hover { border-color: var(--ink-soft); }
+
+.login {
+  max-width: 340px;
+  margin: 18vh auto 0;
+  padding: 2rem 1.5rem;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: grid;
+  gap: 0.5rem;
+}
+.login p { margin: 0 0 0.75rem; color: var(--ink-soft); }
+.login input {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.login button { margin-top: 0.5rem; }
+.login .error { color: var(--miss); min-height: 1.5em; margin: 0; }
+
+main { max-width: 1080px; margin: 0 auto; padding: 1.5rem 16px 3rem; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem; }
+.top p { margin: 0.2rem 0 0; }
+.actions { display: flex; gap: 0.5rem; }
+section { margin-bottom: 2rem; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+.tile {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+}
+.tile .value { font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .label { color: var(--ink-soft); font-size: 0.85rem; }
+.tile .sub { color: var(--ink-soft); font-size: 0.8rem; }
+
+.charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 0.75rem; }
+.chart, .split {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  position: relative;
+}
+.chart h3, .split h3 { font-size: 0.95rem; font-weight: 500; margin: 0; }
+.chart .peak { color: var(--ink-soft); font-size: 0.8rem; }
+.chart svg { display: block; width: 100%; height: 120px; margin-top: 0.5rem; overflow: visible; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .bar { fill: var(--bar); }
+.chart .hit { fill: transparent; cursor: default; }
+.chart .hit:hover + .bar, .chart .bar.on { fill: var(--bar-hover); }
+.chart .axis { display: flex; justify-content: space-between; color: var(--ink-soft); font-size: 0.75rem; margin-top: 0.25rem; }
+.tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  transform: translate(-50%, -100%);
+}
+
+.splits { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 0.75rem; }
+.split ol { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.35rem; }
+.split li { display: grid; grid-template-columns: 1fr auto; gap: 0 0.75rem; font-size: 0.9rem; }
+.split .n { font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+.split .meter { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.split .meter span { display: block; height: 100%; background: var(--bar); border-radius: 2px; }
+.split .empty { color: var(--ink-soft); font-size: 0.9rem; margin: 0.5rem 0 0; }
+.foot { max-width: 60ch; }
+
+@media (max-width: 520px) {
+  .top { flex-direction: column; }
+  .tile .value { font-size: 1.35rem; }
+}

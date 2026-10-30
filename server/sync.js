@@ -7,6 +7,7 @@
 //                                                   when the server copy is newer
 //
 // Codes are three words ("quiet white seal"), sent as "quiet-white-seal".
+// The same server keeps the visitor stats for /pentadbir: see server/stats.js.
 // With SERVE_STATIC=1 it also serves the site, which is handy for local testing.
 
 import { createServer } from "node:http";
@@ -15,6 +16,7 @@ import { randomInt } from "node:crypto";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ADJECTIVES, COLOURS, NOUNS } from "../js/words.js";
+import { createStats } from "./stats.js";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const PORT = Number(process.env.PORT) || 8787;
@@ -22,9 +24,16 @@ const HOST = process.env.HOST || "127.0.0.1";
 const DATA_DIR = resolve(process.env.DATA_DIR || join(ROOT, "data"));
 const SERVE_STATIC = process.env.SERVE_STATIC === "1";
 const MAX_BODY = 512 * 1024;
+const stats = createStats({
+  dir: resolve(process.env.STATS_DIR || join(DATA_DIR, "stats")),
+  syncDir: DATA_DIR,
+  passwordFile: resolve(process.env.PENTADBIR_PASSWORD_FILE || join(ROOT, "data", "pentadbir-password")),
+  siteHost: process.env.SITE_HOST || "qurantype.semput.com",
+});
 
 // Unknown codes and new codes are limited per address, so codes can't be guessed by brute force.
-const LIMITS = { miss: 30, create: 20 }; // per hour
+// Wrong pentadbir passwords and stats events are limited the same way.
+const LIMITS = { miss: 30, create: 20, login: 10, hit: 3000 }; // per hour
 const hits = new Map();
 function limited(ip, kind) {
   const key = `${kind}:${ip}`;
@@ -73,17 +82,17 @@ function serial(code, task) {
   return run;
 }
 
-function send(res, status, body) {
-  res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
+function send(res, status, body, headers = {}) {
+  res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store", ...headers });
   res.end(JSON.stringify(body));
 }
 
-async function readJson(req) {
+async function readJson(req, max = MAX_BODY) {
   let size = 0;
   const chunks = [];
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY) throw Object.assign(new Error("too large"), { status: 413 });
+    if (size > max) throw Object.assign(new Error("too large"), { status: 413 });
     chunks.push(chunk);
   }
   try {
@@ -108,6 +117,7 @@ async function api(req, res, ip, code) {
     const record = { state: body.state, savedAt: Number(body.state.savedAt) || Date.now() };
     await store(fresh, record);
     count(ip, "create");
+    await stats.syncCreated();
     return send(res, 201, { code: fresh, savedAt: record.savedAt });
   }
 
@@ -137,6 +147,40 @@ async function api(req, res, ip, code) {
   return send(res, 405, { error: "method" });
 }
 
+const SESSION_SECONDS = 30 * 86400;
+
+async function pentadbir(req, res, ip, action) {
+  if (action === "login" && req.method === "POST") {
+    if (limited(ip, "login")) return send(res, 429, { error: "slow down" });
+    const body = await readJson(req, 4096);
+    const value = await stats.login(body?.password);
+    if (!value) {
+      count(ip, "login");
+      return send(res, 401, { error: "wrong password" });
+    }
+    return send(res, 200, { ok: true }, { "set-cookie": stats.cookie(value, SESSION_SECONDS) });
+  }
+  if (action === "logout" && req.method === "POST") {
+    return send(res, 200, { ok: true }, { "set-cookie": stats.cookie("", 0) });
+  }
+  if (action === "stats" && req.method === "GET") {
+    if (!(await stats.signedIn(req.headers.cookie))) return send(res, 401, { error: "sign in" });
+    return send(res, 200, await stats.report());
+  }
+  return send(res, 404, { error: "not found" });
+}
+
+// Events from the site. Anything odd is quietly dropped, so the page never waits on it.
+async function hit(req, res, ip) {
+  if (req.method !== "POST") return send(res, 405, { error: "method" });
+  if (!limited(ip, "hit")) {
+    count(ip, "hit");
+    const body = await readJson(req, 2048).catch(() => null);
+    if (body && typeof body === "object") await stats.hit(body, ip, String(req.headers["user-agent"] || ""));
+  }
+  res.writeHead(204).end();
+}
+
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -148,8 +192,9 @@ const TYPES = {
 
 async function serveFile(req, res, pathname) {
   const rel = normalize(decodeURIComponent(pathname)).replace(/^([/\\]|\.\.[/\\])+/, "");
-  const file = resolve(ROOT, rel || "index.html");
-  const allowed = [join(ROOT, "index.html"), join(ROOT, "css"), join(ROOT, "js")];
+  let file = resolve(ROOT, rel || "index.html");
+  if (file === join(ROOT, "pentadbir")) file = join(file, "index.html");
+  const allowed = [join(ROOT, "index.html"), join(ROOT, "css"), join(ROOT, "js"), join(ROOT, "pentadbir")];
   if (!allowed.some((p) => file === p || file.startsWith(p + "/"))) return send(res, 404, { error: "not found" });
   try {
     const data = await readFile(file);
@@ -168,6 +213,9 @@ const server = createServer(async (req, res) => {
   try {
     const match = url.pathname.match(/^\/api\/sync\/?([^/]*)$/);
     if (match) return await api(req, res, ip, decodeURIComponent(match[1]).toLowerCase());
+    if (url.pathname === "/api/hit") return await hit(req, res, ip);
+    const admin = url.pathname.match(/^\/api\/pentadbir\/([a-z]+)$/);
+    if (admin) return await pentadbir(req, res, ip, admin[1]);
     if (SERVE_STATIC && req.method === "GET") return await serveFile(req, res, url.pathname);
     send(res, 404, { error: "not found" });
   } catch (err) {
@@ -177,6 +225,11 @@ const server = createServer(async (req, res) => {
 });
 
 await mkdir(DATA_DIR, { recursive: true });
+await stats.start();
+setInterval(() => stats.flush().catch(console.error), 10_000).unref();
+for (const signal of ["SIGTERM", "SIGINT"]) {
+  process.once(signal, () => stats.flush().catch(console.error).finally(() => process.exit(0)));
+}
 server.listen(PORT, HOST, () => {
   console.log(`QuranType sync on http://${HOST}:${PORT}, saving to ${DATA_DIR}`);
 });

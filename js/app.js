@@ -1,6 +1,7 @@
 import { TRANSLATIONS, RECITERS, TOTAL_AYAHS, getSurah, getSurahList } from "./api.js";
 import { buildPlan, matches, filledUpTo, isForgivable } from "./typing.js";
 import { FRAMES, frameBox } from "./frame.js";
+import { trackVisit, trackPrefs, trackAyah, trackSurah, trackKhatam } from "./stats.js";
 import { savedCode, rememberCode, showCode, parseCode, linkFor, codeFromLink, createCode, fetchCode, pushState } from "./sync.js";
 
 const $ = (id) => document.getElementById(id);
@@ -213,6 +214,7 @@ setInterval(updateTimer, 1000);
 let surah = null; // the loaded surah
 let ayah = null; // the ayah being typed
 let plan = null; // typing plan for its translation
+let typingMsAtLoad = 0; // typing time when this ayah was loaded, for the stats
 let spans = [];
 let missed = false;
 let busy = false; // between ayat: keys are held and replayed once the next one shows
@@ -247,6 +249,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
     state.surah = surah.number;
     state.ayah = ayah.numberInSurah;
     state.pos = Math.min(pos, plan.stream.length);
+    typingMsAtLoad = state.typingMs;
     if (state.run?.surah !== surah.number) {
       state.run = { surah: surah.number, chars: 0, misses: 0, words: 0, ms: 0 };
     }
@@ -437,8 +440,13 @@ function handleKey(ch) {
 
 function finishAyah() {
   markTyped();
-  state.run.words += plan.stream.reduce((n, s) => n + (s.ch === " " ? 1 : 0), 1);
-  if (typedTotal() === TOTAL_AYAHS && state.khatamMs == null) state.khatamMs = state.typingMs;
+  const words = plan.stream.reduce((n, s) => n + (s.ch === " " ? 1 : 0), 1);
+  state.run.words += words;
+  trackAyah(surah.number, words, state.typingMs - typingMsAtLoad);
+  if (typedTotal() === TOTAL_AYAHS && state.khatamMs == null) {
+    state.khatamMs = state.typingMs;
+    trackKhatam();
+  }
   save();
   updateProgress();
   el.current.classList.add("finished");
@@ -501,6 +509,7 @@ function showScore() {
   const wpm = minutes > 0 ? Math.round(run.chars / 5 / minutes) : 0;
   const accuracy = run.chars + run.misses ? Math.round((run.chars / (run.chars + run.misses)) * 100) : 100;
   state.results[surah.number] = { words: run.words, wpm, accuracy, ms: run.ms };
+  trackSurah(surah.number, wpm, accuracy);
   state.run = null;
   save();
 
@@ -1213,6 +1222,7 @@ function showWelcome() {
 
 function begin() {
   started = true;
+  trackPrefs(state);
   if (state.pos > 0 || state.surah > 1 || state.ayah > 1) {
     el.hint.textContent = "Welcome back. Carry on typing from where you stopped.";
   }
@@ -1225,6 +1235,7 @@ applyTheme();
 const setFrame = frameBox($("stage"), $("illumination"), state.frame);
 
 async function start() {
+  trackVisit();
   // Opened from a sync link, or synced before: pick up the latest progress first.
   const linked = codeFromLink();
   try {
