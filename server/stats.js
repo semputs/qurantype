@@ -117,6 +117,9 @@ export function createStats({ dir, syncDir, passwordFile, siteHost }) {
   const visitorOf = (ip, ua) => createHash("sha256").update(salt).update(`${ip}\n${ua}`).digest("base64url").slice(0, 16);
 
   async function hit(event, ip, ua) {
+    // Unknown events and bad surah numbers are dropped before anyone is counted.
+    if (!["visit", "prefs", "ayah", "surah", "khatam"].includes(event.t)) return false;
+    if ((event.t === "ayah" || event.t === "surah") && !surahOf(event.s)) return false;
     const d = await current();
     const id = visitorOf(ip, ua);
     let visitor = seen.get(id);

@@ -68,6 +68,7 @@ test("events add up to daily totals, with no addresses saved", async () => {
   await post("/hit", { t: "prefs", tr: "en.sahih", rc: "ar.husary", audio: false }, as("2.2.2.2"));
   await post("/hit", { t: "ayah", s: 999, w: 5 }, as("2.2.2.2")); // dropped
   await post("/hit", { t: "nonsense" }, as("2.2.2.2")); // dropped
+  await post("/hit", { t: "ping" }, as("4.4.4.4")); // dropped, and not a visitor
 
   const res = await fetch(`${base}/pentadbir/stats`, { headers: { cookie: await signIn() } });
   assert.equal(res.status, 200);
