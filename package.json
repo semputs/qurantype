@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "start": "python3 -m http.server 8000"
+    "start": "SERVE_STATIC=1 node server/sync.js",
+    "static": "python3 -m http.server 8000"
   }
 }

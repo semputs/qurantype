@@ -130,6 +130,30 @@
           <option value="dark">Dark</option>
         </select>
       </label>
+      <section class="sync" aria-labelledby="sync-title">
+        <h3 class="sheet-label" id="sync-title">Continue on another device</h3>
+        <div class="sync-body" id="sync-off">
+          <p class="stat-note">Get a sync code of three words, then enter it on your other device. Your place, typed ayat and typing time stay the same on both.</p>
+          <button class="button" id="sync-create" type="button">Get a sync code</button>
+          <div class="sync-use">
+            <label class="field">
+              <span>Have a code already?</span>
+              <input type="text" id="sync-input" placeholder="quiet white seal" autocomplete="off"
+                     autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
+            </label>
+            <button class="button" id="sync-use" type="button">Use code</button>
+          </div>
+        </div>
+        <div class="sync-body" id="sync-on" hidden>
+          <p class="sync-code" id="sync-code"></p>
+          <p class="stat-note" id="sync-status" aria-live="polite"></p>
+          <div class="sync-actions">
+            <button class="button" id="sync-copy" type="button">Copy words</button>
+            <button class="button button-quiet" id="sync-link" type="button">Copy link</button>
+            <button class="button button-quiet" id="sync-stop" type="button">Stop syncing here</button>
+          </div>
+        </div>
+      </section>
       <div class="sheet-actions">
         <button class="button" value="close">Done</button>
       </div>
