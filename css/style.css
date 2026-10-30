@@ -397,19 +397,11 @@ body.focus .foot .progress-label, body.focus .foot .credits { opacity: 0; }
   color: var(--ink-soft);
 }
 
-.trail-arabic {
-  margin: 0;
-  font-family: var(--arabic);
-  font-size: clamp(1.2rem, 3.4vw, 1.5rem);
-  line-height: 2;
-  color: var(--ink);
-}
-
-.trail-text {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.7;
-  color: var(--ink);
+.trail-copy {
+  align-self: center;
+  max-width: none;
+  pointer-events: none;
+  transition: none;
 }
 
 /* Footer */

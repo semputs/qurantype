@@ -486,20 +486,31 @@ el.scoreNext.addEventListener("click", () => {
 // the next appears.
 const TRAIL_LENGTH = 20;
 
-function makeTrailItem() {
+// Finished ayat keep exactly the line breaks they were typed with: each is
+// a copy of the typing area at its full width, shrunk with CSS zoom.
+const TRAIL_ZOOM = 0.6;
+
+// A static copy of the ayah as typed, without the caret or the input.
+function copyOfCurrent() {
+  const copy = el.current.cloneNode(true);
+  copy.removeAttribute("id");
+  copy.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
+  copy.querySelectorAll(".caret, .catcher, .enter-key").forEach((n) => n.remove());
+  copy.classList.remove("leaving", "moved");
+  return copy;
+}
+
+function makeTrailItem(width) {
   const item = document.createElement("li");
   item.className = "trail-item";
   const ref = document.createElement("p");
   ref.className = "trail-ref";
   ref.textContent = `${surah.englishName} ${surah.number}:${ayah.numberInSurah}`;
-  const arabic = el.arabic.cloneNode(true);
-  arabic.removeAttribute("id");
-  arabic.className = "trail-arabic";
-  const text = document.createElement("p");
-  text.className = "trail-text";
-  text.lang = el.translation.lang;
-  text.textContent = plan.text.join("");
-  item.append(ref, arabic, text);
+  const copy = copyOfCurrent();
+  copy.classList.add("trail-copy");
+  copy.style.width = `${width}px`;
+  copy.style.zoom = TRAIL_ZOOM;
+  item.append(ref, copy);
   return item;
 }
 
@@ -517,7 +528,8 @@ function keepTrailSteady(change) {
 }
 
 function moveIntoTrail() {
-  const item = makeTrailItem();
+  const from = el.current.getBoundingClientRect();
+  const item = makeTrailItem(from.width);
   item.classList.add("landing");
   // The earlier ayat slide down together, as one block, to make room.
   const older = [...el.trail.children];
@@ -532,21 +544,23 @@ function moveIntoTrail() {
     }
   }
 
-  const from = el.current.getBoundingClientRect();
-  const to = item.getBoundingClientRect();
+  const to = item.querySelector(".trail-copy").getBoundingClientRect();
   const done = () => {
     el.current.classList.add("moved");
+    // Show the trail copy at once, without its fade, where the ghost was.
+    item.style.transition = "none";
     item.classList.remove("landing");
+    void item.offsetWidth;
+    item.style.transition = "";
   };
   if (reducedMotion.matches || !el.current.animate) {
     done();
     return Promise.resolve();
   }
 
-  // A copy of the finished ayah flies down and shrinks into the trail.
-  const ghost = el.current.cloneNode(true);
-  ghost.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
-  ghost.removeAttribute("id");
+  // A copy of the finished ayah flies down and shrinks into the trail,
+  // landing exactly on its zoomed twin there.
+  const ghost = copyOfCurrent();
   ghost.classList.add("ghost");
   Object.assign(ghost.style, {
     left: `${from.left}px`,
@@ -556,23 +570,20 @@ function moveIntoTrail() {
   document.body.append(ghost);
   el.current.classList.add("moved");
 
-  const scale = Math.min(1, Math.max(0.45, to.height / from.height));
+  const scale = TRAIL_ZOOM;
   const dx = to.left + to.width / 2 - (from.left + from.width / 2);
   const dy = to.top - from.top;
   const flight = ghost.animate(
     [
       { transform: "none", opacity: 1 },
-      { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0.55 },
+      { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0.75 },
     ],
     { duration: 620, easing: EASE, fill: "forwards" },
   );
   return flight.finished.then(() => {
-    item.classList.remove("landing");
-    const fade = ghost.animate([{ opacity: 0.55 }, { opacity: 0 }], { duration: 180, fill: "forwards" });
-    return fade.finished.then(() => {
-      ghost.remove();
-      done();
-    });
+    // The ghost now sits exactly on the trail copy, so swap them in one frame.
+    ghost.remove();
+    done();
   });
 }
 
