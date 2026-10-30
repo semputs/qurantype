@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QuranType</title>
+  <meta name="description" content="Type the meaning of the Quran, one ayah at a time, with the Arabic and its recitation alongside.">
+  <meta name="theme-color" content="#f5efe3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121816" media="(prefers-color-scheme: dark)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <span class="wordmark">QuranType</span>
+    <button class="surah-button" id="surah-button" type="button" aria-haspopup="dialog">
+      <span id="surah-name">QuranType</span>
+      <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" /></svg>
+    </button>
+    <div class="bar-actions">
+      <button class="icon-button" id="play-button" type="button" aria-label="Play recitation">
+        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" /></svg>
+      </button>
+      <button class="icon-button" id="settings-button" type="button" aria-label="Settings" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="page" id="page">
+    <p class="basmalah" id="basmalah" lang="ar" dir="rtl" hidden>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+    <p class="arabic" id="arabic" lang="ar" dir="rtl"></p>
+    <div class="typing" id="typing">
+      <p class="translation" id="translation" aria-live="off"></p>
+      <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
+             autocapitalize="off" spellcheck="false" aria-label="Type the translation here">
+    </div>
+    <p class="hint" id="hint">Start typing to begin. Punctuation and words in brackets fill in by themselves.</p>
+    <p class="status" id="status" role="status" hidden></p>
+  </main>
+
+  <footer class="foot">
+    <div class="progress" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+    <p class="progress-label" id="progress-label">&nbsp;</p>
+    <p class="credits">
+      Quran text, translations and recitation from <a href="https://alquran.cloud" target="_blank" rel="noopener">Al Quran Cloud</a>,
+      based on <a href="https://tanzil.net" target="_blank" rel="noopener">Tanzil</a>.
+      Recitation audio via <a href="https://everyayah.com" target="_blank" rel="noopener">EveryAyah</a>.
+    </p>
+  </footer>
+
+  <dialog class="sheet" id="welcome">
+    <form method="dialog">
+      <h1 class="sheet-title">QuranType</h1>
+      <p class="sheet-lede">Type the meaning of the Quran, one ayah at a time. The Arabic sits above, and the recitation begins as you start each ayah.</p>
+      <p class="sheet-label">Choose a translation to type</p>
+      <div class="choices" id="welcome-choices"></div>
+    </form>
+  </dialog>
+
+  <dialog class="sheet" id="settings">
+    <form method="dialog">
+      <h2 class="sheet-title">Settings</h2>
+      <label class="field">
+        <span>Translation</span>
+        <select id="set-translation"></select>
+      </label>
+      <label class="field">
+        <span>Reciter</span>
+        <select id="set-reciter"></select>
+      </label>
+      <label class="field field-check">
+        <input type="checkbox" id="set-autoplay">
+        <span>Play the recitation when I start typing an ayah</span>
+      </label>
+      <label class="field">
+        <span>Appearance</span>
+        <select id="set-theme">
+          <option value="auto">Match my device</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <div class="sheet-actions">
+        <button class="button" value="close">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="sheet" id="jump">
+    <form method="dialog" id="jump-form">
+      <h2 class="sheet-title">Go to</h2>
+      <label class="field">
+        <span>Surah</span>
+        <select id="jump-surah"></select>
+      </label>
+      <label class="field">
+        <span>Ayah</span>
+        <input type="number" id="jump-ayah" min="1" value="1" inputmode="numeric">
+      </label>
+      <div class="sheet-actions">
+        <button class="button button-quiet" value="cancel" formnovalidate>Cancel</button>
+        <button class="button" value="go">Go</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

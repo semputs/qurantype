@@ -1,3 +1,47 @@
 # QuranType
 
-A typing practice site for Quranic phrases.
+Type the meaning of the Quran, one ayah at a time. The Arabic (Uthmani script) sits above, the chosen translation sits below in faint ink and darkens as you type it, and the recitation starts as soon as you begin each ayah.
+
+It's meant to be calm rather than a game: no timers or scores, mistakes just turn the letter soft red and wait, and your place is saved so you can type a few ayat a day and finish a khatam over time.
+
+## What it does
+
+- **Pick a translation** on first visit: Bahasa Melayu (Abdullah Muhammad Basmeih), English (Saheeh International) or Bahasa Indonesia. Change it any time in settings.
+- **Forgiving typing.** Capital letters and accents don't matter. Punctuation and anything in brackets, like Saheeh International's "[all] praise", fills in by itself. Footnote numbers are removed.
+- **Recitation** plays when you start typing an ayah (can be turned off), or with the play button. Default reciter is Mishary Rashid Alafasy; others are in settings.
+- **Resume anywhere.** Your exact position, even mid-ayah, is saved in the browser. No account needed.
+- **Go to** any surah and ayah from the surah name at the top.
+- **Progress** line shows surah, ayah, juz and how far through the Quran you are.
+- Light and dark themes (follows your device by default), works on phones.
+
+## Running it
+
+It's a static site with no build step. Serve the folder with any web server:
+
+```sh
+npm start        # same as: python3 -m http.server 8000
+```
+
+Then open http://localhost:8000. Opening `index.html` straight from disk won't work because browsers block ES modules on `file://`.
+
+To deploy, upload the files as they are to any static host (a subdomain on semput.com, GitHub Pages, Netlify, etc.).
+
+## Tests
+
+```sh
+npm test
+```
+
+Runs the typing rules in `js/typing.js` (what you have to type, what fills in, what counts as a match) with Node's built-in test runner. Node 20 or newer.
+
+## Layout
+
+- `index.html`: the page and its dialogs
+- `css/style.css`: all styling, with colour tokens for light and dark
+- `js/app.js`: page behaviour (loading ayat, typing, audio, saving, settings)
+- `js/typing.js`: pure typing rules, no DOM
+- `js/api.js`: Al Quran Cloud client, translation and reciter lists
+
+## Credits and licence of the content
+
+Quran text, translations and recitation audio come from [Al Quran Cloud](https://alquran.cloud) (free, no API key). The Arabic text is from [Tanzil](https://tanzil.net) and the per-ayah audio from [EveryAyah](https://everyayah.com). These are free to use with credit for **non-commercial** purposes, so the site should stay free with no ads or paid features, and keep the credits line in the footer.

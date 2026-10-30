@@ -1,0 +1,333 @@
+:root {
+  --paper: #f5efe3;
+  --paper-deep: #ece4d3;
+  --ink: #1d3a30;
+  --ink-soft: #5e6f66;
+  --ghost: #b7ae9c;
+  --gold: #a9823a;
+  --miss: #c0574a;
+  --miss-bg: #f3d9d2;
+  --line: #ddd3bf;
+  --sheet: #fbf7ef;
+  --shadow: 0 24px 60px -24px rgb(60 45 20 / 0.35);
+
+  --arabic: "Amiri Quran", "Amiri", "Scheherazade New", serif;
+  --serif: "Literata", Georgia, "Times New Roman", serif;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121816;
+    --paper-deep: #1a2220;
+    --ink: #e8e1d1;
+    --ink-soft: #9aa69f;
+    --ghost: #5d6863;
+    --gold: #cda85e;
+    --miss: #e48a7c;
+    --miss-bg: #3d2421;
+    --line: #2a3431;
+    --sheet: #18201e;
+    --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #121816;
+  --paper-deep: #1a2220;
+  --ink: #e8e1d1;
+  --ink-soft: #9aa69f;
+  --ghost: #5d6863;
+  --gold: #cda85e;
+  --miss: #e48a7c;
+  --miss-bg: #3d2421;
+  --line: #2a3431;
+  --sheet: #18201e;
+  --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease;
+}
+
+button, select, input { font: inherit; color: inherit; }
+
+/* Top bar */
+
+.bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px clamp(16px, 4vw, 32px);
+}
+
+.wordmark {
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.surah-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1rem;
+  max-width: 60vw;
+}
+.surah-button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.surah-button:hover { background: var(--paper-deep); }
+.surah-button svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; flex: none; }
+
+.bar-actions { display: flex; justify-content: flex-end; gap: 4px; }
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.icon-button:hover { background: var(--paper-deep); color: var(--ink); }
+.icon-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+#play-button svg { fill: currentColor; stroke: none; }
+#play-button .icon-pause, #play-button.playing .icon-play { display: none; }
+#play-button.playing .icon-pause { display: block; }
+#play-button.playing { color: var(--gold); }
+
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* Ayah */
+
+.page {
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(24px, 6vh, 72px) 16px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: text;
+}
+
+.basmalah {
+  margin: 0 0 1.4rem;
+  font-family: var(--arabic);
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  color: var(--gold);
+}
+
+.arabic {
+  margin: 0 0 clamp(28px, 5vh, 48px);
+  font-family: var(--arabic);
+  font-size: clamp(1.75rem, 5.2vw, 2.5rem);
+  line-height: 2.1;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  transition: opacity 0.35s ease;
+}
+
+.ayah-mark {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5em;
+  height: 1.5em;
+  margin-inline-start: 0.25em;
+  padding: 0 0.2em;
+  border: 1.5px solid var(--gold);
+  border-radius: 999px;
+  font-family: var(--serif);
+  font-size: 0.55em;
+  line-height: 1;
+  color: var(--gold);
+  vertical-align: 0.35em;
+}
+
+/* Typing */
+
+.typing { position: relative; width: 100%; }
+
+.translation {
+  margin: 0;
+  font-size: clamp(1.15rem, 3.2vw, 1.4rem);
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  text-align: center;
+  transition: opacity 0.35s ease;
+}
+
+.translation .c { color: var(--ghost); transition: color 0.12s ease; }
+.translation .c.done { color: var(--ink); }
+.translation .c.auto.done { color: var(--ink-soft); }
+.translation .c.cur { box-shadow: inset 0 -2px 0 var(--gold); }
+.translation .c.cur.miss { color: var(--miss); background: var(--miss-bg); border-radius: 3px; box-shadow: inset 0 -2px 0 var(--miss); }
+.typing.blurred .c.cur { box-shadow: none; }
+.translation.complete .c { color: var(--ink); }
+
+.leaving { opacity: 0; }
+
+/* Invisible input that catches typing, so phone keyboards open too. */
+.catcher {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  font-size: 16px; /* stops iOS zooming in */
+  caret-color: transparent;
+  cursor: text;
+}
+
+.hint {
+  margin: 28px 0 0;
+  max-width: 32em;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  transition: opacity 0.4s ease;
+}
+.hint.gone { opacity: 0; }
+
+.status {
+  margin: 24px 0 0;
+  color: var(--ink-soft);
+}
+.status button { margin-inline-start: 8px; }
+
+/* Footer */
+
+.foot {
+  padding: 0 clamp(16px, 4vw, 32px) 18px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.progress {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--gold);
+  transition: width 0.6s ease;
+}
+
+.progress-label {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.credits {
+  margin: 14px 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  text-align: center;
+  opacity: 0.8;
+}
+.credits a { color: inherit; }
+
+/* Dialogs */
+
+.sheet {
+  width: min(440px, calc(100vw - 32px));
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--sheet);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.sheet::backdrop { background: rgb(20 25 22 / 0.35); backdrop-filter: blur(2px); }
+.sheet form { display: flex; flex-direction: column; gap: 16px; }
+
+.sheet-title { margin: 0; font-size: 1.35rem; font-weight: 500; }
+.sheet-lede { margin: 0; color: var(--ink-soft); line-height: 1.6; }
+.sheet-label { margin: 8px 0 0; font-size: 0.85rem; letter-spacing: 0.04em; color: var(--ink-soft); }
+
+.choices { display: flex; flex-direction: column; gap: 10px; }
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  cursor: pointer;
+  text-align: start;
+}
+.choice:hover { border-color: var(--gold); }
+.choice strong { font-weight: 500; }
+.choice span { font-size: 0.85rem; color: var(--ink-soft); }
+
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 0.9rem; color: var(--ink-soft); }
+.field select, .field input[type="number"] {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1rem;
+}
+.field-check { flex-direction: row; align-items: center; gap: 10px; color: var(--ink); }
+.field-check input { width: 18px; height: 18px; accent-color: var(--gold); }
+
+.sheet-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.button {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+.button-quiet { background: transparent; color: var(--ink-soft); }
+.button-quiet:hover { color: var(--ink); }
+
+@media (max-width: 520px) {
+  .bar { grid-template-columns: 1fr auto; }
+  .wordmark { display: none; }
+  .surah-button { justify-self: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
