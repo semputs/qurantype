@@ -23,6 +23,8 @@ const el = {
   setTranslation: $("set-translation"),
   setReciter: $("set-reciter"),
   setAutoplay: $("set-autoplay"),
+  setSkipBrackets: $("set-skip-brackets"),
+  trail: $("trail"),
   setTheme: $("set-theme"),
   jump: $("jump"),
   jumpSurah: $("jump-surah"),
@@ -36,6 +38,7 @@ const DEFAULTS = {
   translation: null,
   reciter: RECITERS[0].id,
   autoplay: true,
+  skipBrackets: false,
   theme: "auto",
   surah: 1,
   ayah: 1,
@@ -94,7 +97,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
 
     surah = next;
     ayah = next.ayahs[index];
-    plan = buildPlan(ayah.translation);
+    plan = buildPlan(ayah.translation, { skipBrackets: state.skipBrackets });
     missed = false;
     state.surah = surah.number;
     state.ayah = ayah.numberInSurah;
@@ -209,8 +212,31 @@ function handleKey(ch) {
 function complete() {
   busy = true;
   el.translation.classList.add("complete");
+  addToTrail();
   setTimeout(nextAyah, 450);
 }
+
+// Finished ayat collect below the one being typed, newest first.
+const TRAIL_LENGTH = 20;
+function addToTrail() {
+  const item = document.createElement("li");
+  item.className = "trail-item entering";
+  const ref = document.createElement("p");
+  ref.className = "trail-ref";
+  ref.textContent = `${surah.englishName} ${surah.number}:${ayah.numberInSurah}`;
+  const arabic = el.arabic.cloneNode(true);
+  arabic.removeAttribute("id");
+  arabic.className = "trail-arabic";
+  const text = document.createElement("p");
+  text.className = "trail-text";
+  text.lang = el.translation.lang;
+  text.textContent = plan.text.join("");
+  item.append(ref, arabic, text);
+  el.trail.prepend(item);
+  requestAnimationFrame(() => requestAnimationFrame(() => item.classList.remove("entering")));
+  while (el.trail.children.length > TRAIL_LENGTH) el.trail.lastElementChild.remove();
+}
+const clearTrail = () => el.trail.replaceChildren();
 
 function nextAyah() {
   if (ayah.numberInSurah < surah.ayahs.length) {
@@ -317,12 +343,14 @@ el.settingsButton.addEventListener("click", () => {
   el.setTranslation.value = state.translation;
   el.setReciter.value = state.reciter;
   el.setAutoplay.checked = state.autoplay;
+  el.setSkipBrackets.checked = state.skipBrackets;
   el.setTheme.value = state.theme;
   el.settings.showModal();
 });
 
 el.setTranslation.addEventListener("change", () => {
   state.translation = el.setTranslation.value;
+  clearTrail();
   save();
   loadAyah(state.surah, state.ayah, 0);
 });
@@ -335,6 +363,11 @@ el.setReciter.addEventListener("change", () => {
 el.setAutoplay.addEventListener("change", () => {
   state.autoplay = el.setAutoplay.checked;
   save();
+});
+el.setSkipBrackets.addEventListener("change", () => {
+  state.skipBrackets = el.setSkipBrackets.checked;
+  save();
+  loadAyah(state.surah, state.ayah, 0);
 });
 el.setTheme.addEventListener("change", () => {
   state.theme = el.setTheme.value;
@@ -372,6 +405,7 @@ el.jump.addEventListener("close", () => {
   if (el.jump.returnValue === "go") {
     const max = Number(el.jumpAyah.max) || 1;
     const ayahNumber = Math.min(Math.max(Number(el.jumpAyah.value) || 1, 1), max);
+    clearTrail();
     loadAyah(Number(el.jumpSurah.value), ayahNumber, 0);
   }
   focusTyping();

@@ -39,8 +39,9 @@
       <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
              autocapitalize="off" spellcheck="false" aria-label="Type the translation here">
     </div>
-    <p class="hint" id="hint">Start typing to begin. Punctuation and words in brackets fill in by themselves.</p>
+    <p class="hint" id="hint">Start typing to begin. Punctuation fills in by itself.</p>
     <p class="status" id="status" role="status" hidden></p>
+    <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>
   </main>
 
   <footer class="foot">
@@ -76,6 +77,10 @@
       <label class="field field-check">
         <input type="checkbox" id="set-autoplay">
         <span>Play the recitation when I start typing an ayah</span>
+      </label>
+      <label class="field field-check">
+        <input type="checkbox" id="set-skip-brackets">
+        <span>Skip words in brackets (they fill in by themselves)</span>
       </label>
       <label class="field">
         <span>Appearance</span>

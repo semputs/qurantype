@@ -224,6 +224,54 @@ button, select, input { font: inherit; color: inherit; }
 }
 .status button { margin-inline-start: 8px; }
 
+/* Finished ayat, newest first */
+
+.trail {
+  list-style: none;
+  margin: clamp(32px, 6vh, 56px) 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  cursor: default;
+}
+.trail:empty { display: none; }
+
+.trail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  opacity: 0.75;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.trail-item:nth-child(n + 4) { opacity: 0.45; }
+.trail-item.entering { opacity: 0; transform: translateY(-16px); }
+
+.trail-ref {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.trail-arabic {
+  margin: 0;
+  font-family: var(--arabic);
+  font-size: clamp(1.2rem, 3.4vw, 1.5rem);
+  line-height: 2;
+  color: var(--ink);
+}
+
+.trail-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
 /* Footer */
 
 .foot {
@@ -331,3 +379,5 @@ button, select, input { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+[hidden] { display: none !important; }

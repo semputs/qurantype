@@ -2,7 +2,7 @@
 // reader actually has to type, and checks keystrokes against it.
 // No DOM here, so it can be tested with `node --test`.
 
-// Brackets whose contents are filled in automatically, e.g. Sahih
+// Brackets whose contents can be filled in automatically, e.g. Sahih
 // International's "[all] praise" or Basmeih's "(Muhammad)".
 const BRACKETS = { "[": "]", "(": ")", "{": "}" };
 
@@ -26,7 +26,8 @@ export function foldChar(ch) {
 }
 
 /**
- * Build the typing plan for a piece of text.
+ * Build the typing plan for a piece of text. With `skipBrackets`, words
+ * inside brackets are filled in too; otherwise only the brackets are.
  * Returns { text, auto, stream } where
  *  - text:   the cleaned display text
  *  - auto:   boolean per character of text, true if it is filled in for you
@@ -34,14 +35,14 @@ export function foldChar(ch) {
  *            position in text. Runs of whitespace (and whitespace around
  *            auto-filled parts) collapse to a single space.
  */
-export function buildPlan(raw) {
+export function buildPlan(raw, { skipBrackets = false } = {}) {
   const text = cleanTranslation(raw);
   const chars = Array.from(text);
   const auto = new Array(chars.length).fill(false);
 
   // Mark bracketed groups (including nested ones) as auto.
   const stack = [];
-  for (let i = 0; i < chars.length; i++) {
+  for (let i = 0; skipBrackets && i < chars.length; i++) {
     const ch = chars[i];
     if (BRACKETS[ch]) stack.push(BRACKETS[ch]);
     if (stack.length) auto[i] = true;
