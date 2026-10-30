@@ -21,6 +21,10 @@
       <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" /></svg>
     </button>
     <div class="bar-actions">
+      <button class="timer-button" id="timer-button" type="button" aria-haspopup="dialog" aria-label="Typing time and progress">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5" /><path d="M12 9v4.2l2.6 1.6M10 3h4" /></svg>
+        <span id="timer">0:00</span>
+      </button>
       <button class="icon-button" id="play-button" type="button" aria-label="Play recitation">
         <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
         <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" /></svg>
@@ -32,13 +36,17 @@
   </header>
 
   <main class="page" id="page">
-    <p class="basmalah" id="basmalah" lang="ar" dir="rtl" hidden>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
-    <p class="arabic" id="arabic" lang="ar" dir="rtl"></p>
-    <div class="typing" id="typing">
-      <p class="translation" id="translation" aria-live="off"></p>
-      <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
-             autocapitalize="off" spellcheck="false" aria-label="Type the translation here">
-    </div>
+    <section class="current" id="current">
+      <p class="basmalah" id="basmalah" lang="ar" dir="rtl" hidden>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+      <p class="arabic" id="arabic" lang="ar" dir="rtl"></p>
+      <div class="typing" id="typing">
+        <p class="translation" id="translation" aria-live="off"></p>
+        <span class="caret" id="caret" aria-hidden="true"></span>
+        <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false" enterkeyhint="next" aria-label="Type the translation here">
+      </div>
+    </section>
+    <button class="continue" id="continue" type="button" hidden>Press <kbd>Enter</kbd> to continue</button>
     <p class="hint" id="hint">Start typing to begin. Punctuation fills in by itself.</p>
     <p class="status" id="status" role="status" hidden></p>
     <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>
@@ -79,6 +87,10 @@
         <span>Play the recitation when I start typing an ayah</span>
       </label>
       <label class="field field-check">
+        <input type="checkbox" id="set-auto-continue">
+        <span>Go to the next ayah by itself, without pressing Enter</span>
+      </label>
+      <label class="field field-check">
         <input type="checkbox" id="set-skip-brackets">
         <span>Skip words in brackets (they fill in by themselves)</span>
       </label>
@@ -91,6 +103,23 @@
         </select>
       </label>
       <div class="sheet-actions">
+        <button class="button" value="close">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="sheet" id="stats">
+    <form method="dialog">
+      <h2 class="sheet-title">My progress</h2>
+      <div class="stat-row">
+        <div class="stat"><span class="stat-value" id="stat-time">0:00</span><span class="stat-label">typing time</span></div>
+        <div class="stat"><span class="stat-value" id="stat-ayat">0</span><span class="stat-label">ayat typed</span></div>
+        <div class="stat"><span class="stat-value" id="stat-surahs">0</span><span class="stat-label">surahs finished</span></div>
+      </div>
+      <p class="stat-note" id="stat-note"></p>
+      <div class="surah-times" id="surah-times"></div>
+      <div class="sheet-actions sheet-actions-split">
+        <button class="button button-quiet" id="reset-button" type="button">Start a new khatam</button>
         <button class="button" value="close">Done</button>
       </div>
     </form>

@@ -8,7 +8,10 @@ It's meant to be calm rather than a game: no timers or scores, mistakes just tur
 
 - **Pick a translation** on first visit: Bahasa Melayu (Abdullah Muhammad Basmeih), English (Saheeh International) or Bahasa Indonesia. Change it any time in settings.
 - **Forgiving typing.** Capital letters and accents don't matter, punctuation fills in by itself and footnote numbers are removed. Words in brackets, like Saheeh International's "[all] praise", are typed too, or can be skipped in settings.
-- **Finished ayat** move down below the one you're typing, newest first.
+- **Press Enter to continue.** When an ayah is fully typed its number fills with gold and it waits for Enter (or a tap on the button). Turn on auto-continue in settings to skip this.
+- **Finished ayat** glide down below the one you're typing, newest first, before the next ayah appears.
+- **Typing time.** A quiet clock in the header counts time spent typing, pausing after 5 seconds without a keystroke. Tap it for "My progress": total time, ayat typed, surahs finished and time per surah, so you can see how long the whole Quran took.
+- **Calm to type in.** Letters ink in softly, a gold caret glides along under the next letter, and the header and footer fade away while you type (move the mouse to bring them back).
 - **Recitation** plays when you start typing an ayah (can be turned off), or with the play button. Default reciter is Mishary Rashid Alafasy; others are in settings.
 - **Resume anywhere.** Your exact position, even mid-ayah, is saved in the browser. No account needed.
 - **Go to** any surah and ayah from the surah name at the top.
