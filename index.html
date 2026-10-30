@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QuranType</title>
+  <meta name="description" content="Type the meaning of the Quran, one ayah at a time, with the Arabic and its recitation alongside.">
+  <meta name="theme-color" content="#f5efe3" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121816" media="(prefers-color-scheme: dark)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <span class="wordmark">QuranType</span>
+    <div class="bar-center">
+      <button class="surah-button" id="surah-button" type="button" aria-haspopup="dialog">
+        <span id="surah-name">QuranType</span>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" /></svg>
+      </button>
+      <div class="surah-progress">
+        <div class="surah-progress-track" aria-hidden="true"><div class="surah-progress-fill" id="surah-progress-fill"></div></div>
+        <span class="surah-progress-label" id="surah-progress-label"></span>
+      </div>
+    </div>
+    <div class="bar-actions">
+      <button class="timer-button" id="timer-button" type="button" aria-haspopup="dialog" aria-label="Typing time and progress">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5" /><path d="M12 9v4.2l2.6 1.6M10 3h4" /></svg>
+        <span id="timer">0:00</span>
+      </button>
+      <button class="icon-button" id="play-button" type="button" aria-label="Play recitation">
+        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" /></svg>
+      </button>
+      <button class="icon-button" id="settings-button" type="button" aria-label="Settings" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="page" id="page">
+    <div class="stage" id="stage">
+      <svg class="illumination" id="illumination" aria-hidden="true"></svg>
+      <section class="current" id="current">
+        <p class="basmalah" id="basmalah" lang="ar" dir="rtl" hidden>بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
+        <p class="arabic" id="arabic" lang="ar" dir="rtl"></p>
+        <div class="typing" id="typing">
+          <p class="translation" id="translation" aria-live="off"></p>
+          <span class="caret" id="caret" aria-hidden="true"></span>
+          <input class="catcher" id="catcher" type="text" autocomplete="off" autocorrect="off"
+                 autocapitalize="off" spellcheck="false" enterkeyhint="next" aria-label="Type the translation here">
+        </div>
+      </section>
+      <section class="score" id="score" hidden aria-live="polite">
+        <p class="score-arabic" id="score-arabic" lang="ar" dir="rtl"></p>
+        <h2 class="score-title" id="score-title"></h2>
+        <div class="score-stats">
+          <div class="score-stat"><span class="score-value" id="score-words">0</span><span class="score-label">words</span></div>
+          <div class="score-stat"><span class="score-value" id="score-wpm">0</span><span class="score-label">words per minute</span></div>
+          <div class="score-stat"><span class="score-value" id="score-accuracy">0%</span><span class="score-label">accuracy</span></div>
+          <div class="score-stat"><span class="score-value" id="score-time">0:00</span><span class="score-label">typing time</span></div>
+        </div>
+        <p class="score-note" id="score-note" hidden></p>
+        <button class="button score-next" id="score-next" type="button"></button>
+      </section>
+    </div>
+    <p class="hint" id="hint">Start typing to begin. Punctuation fills in by itself.</p>
+    <p class="status" id="status" role="status" hidden></p>
+    <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>
+  </main>
+
+  <button class="debug-button" id="debug-button" type="button" hidden aria-pressed="false" title="Debug: type by itself at 200 words per minute">
+    <span class="debug-dot" aria-hidden="true"></span>Autotype
+  </button>
+
+  <footer class="foot">
+    <div class="progress" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+    <p class="progress-label" id="progress-label">&nbsp;</p>
+    <p class="credits">
+      Quran text, translations and recitation from <a href="https://alquran.cloud" target="_blank" rel="noopener">Al Quran Cloud</a>,
+      based on <a href="https://tanzil.net" target="_blank" rel="noopener">Tanzil</a>.
+      Recitation audio via <a href="https://everyayah.com" target="_blank" rel="noopener">EveryAyah</a>.
+    </p>
+  </footer>
+
+  <dialog class="sheet" id="welcome">
+    <form method="dialog">
+      <h1 class="sheet-title">QuranType</h1>
+      <p class="sheet-lede">Type the meaning of the Quran, one ayah at a time. The Arabic sits above, and the recitation begins as you start each ayah.</p>
+      <p class="sheet-label">Choose a translation to type</p>
+      <div class="choices" id="welcome-choices"></div>
+    </form>
+  </dialog>
+
+  <dialog class="sheet" id="settings">
+    <form method="dialog">
+      <h2 class="sheet-title">Settings</h2>
+      <label class="field">
+        <span>Translation</span>
+        <select id="set-translation"></select>
+      </label>
+      <label class="field">
+        <span>Reciter</span>
+        <select id="set-reciter"></select>
+      </label>
+      <label class="field field-check">
+        <input type="checkbox" id="set-autoplay">
+        <span>Play the recitation when I start typing an ayah</span>
+      </label>
+      <label class="field field-check">
+        <input type="checkbox" id="set-auto-continue">
+        <span>Go to the next ayah by itself, without pressing Enter</span>
+      </label>
+      <label class="field field-check">
+        <input type="checkbox" id="set-skip-brackets">
+        <span>Skip words in brackets (they fill in by themselves)</span>
+      </label>
+      <label class="field">
+        <span>Frame</span>
+        <select id="set-frame"></select>
+      </label>
+      <label class="field">
+        <span>Appearance</span>
+        <select id="set-theme">
+          <option value="auto">Match my device</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <div class="sheet-actions">
+        <button class="button" value="close">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="sheet" id="stats">
+    <form method="dialog">
+      <h2 class="sheet-title">My progress</h2>
+      <div class="stat-row">
+        <div class="stat"><span class="stat-value" id="stat-time">0:00</span><span class="stat-label">typing time</span></div>
+        <div class="stat"><span class="stat-value" id="stat-ayat">0</span><span class="stat-label">ayat typed</span></div>
+        <div class="stat"><span class="stat-value" id="stat-surahs">0</span><span class="stat-label">surahs finished</span></div>
+      </div>
+      <p class="stat-note" id="stat-note"></p>
+      <div class="surah-times" id="surah-times"></div>
+      <div class="sheet-actions sheet-actions-split">
+        <button class="button button-quiet" id="reset-button" type="button">Start a new khatam</button>
+        <button class="button" value="close">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="sheet sheet-tall" id="jump">
+    <form method="dialog" id="jump-form">
+      <div class="sheet-head">
+        <h2 class="sheet-title">Surahs</h2>
+        <button class="button button-quiet" value="cancel" formnovalidate>Close</button>
+      </div>
+      <button class="khatam-button" id="khatam-button" type="button">
+        <strong>Continue my khatam</strong>
+        <span id="khatam-next"></span>
+      </button>
+      <div class="surah-index" id="surah-index" role="list"></div>
+      <details class="exact">
+        <summary>Go to a specific ayah</summary>
+        <div class="exact-row">
+          <label class="field">
+            <span>Surah</span>
+            <select id="jump-surah"></select>
+          </label>
+          <label class="field field-narrow">
+            <span>Ayah</span>
+            <input type="number" id="jump-ayah" min="1" value="1" inputmode="numeric">
+          </label>
+          <button class="button" value="go">Go</button>
+        </div>
+      </details>
+    </form>
+  </dialog>
+</body>
+</html>
