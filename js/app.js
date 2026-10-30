@@ -17,7 +17,15 @@ const el = {
   translation: $("translation"),
   caret: $("caret"),
   catcher: $("catcher"),
-  continueButton: $("continue"),
+  score: $("score"),
+  scoreArabic: $("score-arabic"),
+  scoreTitle: $("score-title"),
+  scoreWords: $("score-words"),
+  scoreWpm: $("score-wpm"),
+  scoreAccuracy: $("score-accuracy"),
+  scoreTime: $("score-time"),
+  scoreNote: $("score-note"),
+  scoreNext: $("score-next"),
   hint: $("hint"),
   status: $("status"),
   trail: $("trail"),
@@ -40,6 +48,9 @@ const el = {
   surahTimes: $("surah-times"),
   resetButton: $("reset-button"),
   jump: $("jump"),
+  khatamButton: $("khatam-button"),
+  khatamNext: $("khatam-next"),
+  surahIndex: $("surah-index"),
   jumpSurah: $("jump-surah"),
   jumpAyah: $("jump-ayah"),
 };
@@ -59,13 +70,17 @@ const DEFAULTS = {
   surah: 1,
   ayah: 1,
   pos: 0,
-  // Typing time, in milliseconds
+  // Which ayat have been typed: surah number -> "0101…", one digit per ayah.
+  typed: {},
+  // Typing time in milliseconds, overall and per surah.
   typingMs: 0,
-  surahMs: {}, // surah number -> time spent typing it
-  surahsDone: [], // surah numbers typed to the last ayah
-  ayatTyped: 0,
+  surahMs: {},
   startedOn: null, // ISO date of the first keystroke of this khatam
-  khatamMs: null, // total time when the last ayah of the Quran was finished
+  khatamMs: null, // total time when the last untyped ayah was typed
+  // The surah being typed right now, for its score page.
+  run: null, // { surah, chars, misses, words, ms }
+  results: {}, // surah number -> { words, wpm, accuracy, ms } from its last finish
+  continueHints: 0, // times the "Enter or Space" hint has been shown
 };
 
 function loadState() {
@@ -91,6 +106,32 @@ function save() {
 }
 addEventListener("pagehide", saveNow);
 
+// ---- Typed ayat -------------------------------------------------------------
+
+const countOnes = (s = "") => s.split("1").length - 1;
+const typedInSurah = (n) => countOnes(state.typed[n]);
+const typedTotal = () => Object.values(state.typed).reduce((sum, s) => sum + countOnes(s), 0);
+const isSurahDone = (n, total) => typedInSurah(n) === total;
+const isTyped = (n, ayahNumber) => state.typed[n]?.[ayahNumber - 1] === "1";
+
+function markTyped() {
+  const row = state.typed[surah.number] ?? "0".repeat(surah.ayahs.length);
+  const i = ayah.numberInSurah - 1;
+  state.typed[surah.number] = row.slice(0, i) + "1" + row.slice(i + 1);
+}
+
+// The first ayah not typed yet, going through the Quran in order.
+async function nextUntyped() {
+  const list = await getSurahList();
+  for (const s of list) {
+    const row = state.typed[s.number];
+    if (!row) return { surah: s.number, ayah: 1 };
+    const i = row.indexOf("0");
+    if (i !== -1) return { surah: s.number, ayah: i + 1 };
+  }
+  return null;
+}
+
 // ---- Typing time ------------------------------------------------------------
 
 // The clock runs while keys are being pressed and stops counting once a
@@ -104,6 +145,7 @@ function countTime() {
     const delta = Math.min(now - lastKeyAt, PAUSE_MS);
     state.typingMs += delta;
     state.surahMs[surah.number] = (state.surahMs[surah.number] || 0) + delta;
+    if (state.run) state.run.ms += delta;
   }
   if (!state.startedOn) state.startedOn = new Date().toISOString().slice(0, 10);
   lastKeyAt = now;
@@ -144,7 +186,8 @@ let plan = null; // typing plan for its translation
 let spans = [];
 let missed = false;
 let busy = false; // between ayat: keys are held and replayed once the next one shows
-let waiting = false; // ayah typed, waiting for Enter
+let waiting = false; // ayah typed, waiting for Enter or Space
+let scoring = false; // a surah's score page is showing
 let heldKeys = [];
 let loadToken = 0;
 
@@ -154,7 +197,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
   const token = ++loadToken;
   busy = true;
   waiting = false;
-  el.continueButton.hidden = true;
+  if (scoring) hideScore();
   const slow = setTimeout(() => showStatus("Loading…"), 300);
   try {
     const next = await getSurah(surahNumber, state.translation, state.reciter);
@@ -166,6 +209,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
     await fadeOut();
     if (token !== loadToken) return;
 
+    if (surah && surah.number !== next.number) clearTrail();
     surah = next;
     ayah = next.ayahs[index];
     plan = buildPlan(ayah.translation, { skipBrackets: state.skipBrackets });
@@ -173,17 +217,16 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
     state.surah = surah.number;
     state.ayah = ayah.numberInSurah;
     state.pos = Math.min(pos, plan.stream.length);
+    if (state.run?.surah !== surah.number) {
+      state.run = { surah: surah.number, chars: 0, misses: 0, words: 0, ms: 0 };
+    }
     save();
     render();
     fadeIn();
 
     busy = false;
-    if (state.pos >= plan.stream.length) {
-      // Reopened on an ayah that was typed but not yet continued from.
-      showFinished();
-      waiting = true;
-      el.continueButton.hidden = false;
-    }
+    // Reopened on an ayah that was typed but not yet continued from.
+    if (state.pos >= plan.stream.length) waitForContinue();
     const keys = heldKeys;
     heldKeys = [];
     keys.forEach(handleKey);
@@ -210,6 +253,7 @@ function fadeOut() {
   return new Promise((resolve) => setTimeout(resolve, 260));
 }
 function fadeIn() {
+  el.current.hidden = false;
   el.current.classList.remove("moved");
   el.current.classList.add("leaving");
   requestAnimationFrame(() => requestAnimationFrame(() => el.current.classList.remove("leaving")));
@@ -268,28 +312,41 @@ function placeCaret(span) {
 addEventListener("resize", () => plan && updateTyping());
 document.fonts?.ready.then(() => plan && updateTyping());
 
+// The bar follows the surah; the label adds where that sits in the Quran.
 function updateProgress() {
+  const total = surah.ayahs.length;
   const within = plan.stream.length ? state.pos / plan.stream.length : 0;
-  const fraction = (ayah.number - 1 + within) / TOTAL_AYAHS;
-  el.progressFill.style.width = `${(fraction * 100).toFixed(3)}%`;
-  const pct = fraction * 100;
-  const percent = pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.floor(pct);
+  el.progressFill.style.width = `${(((ayah.numberInSurah - 1 + within) / total) * 100).toFixed(2)}%`;
+  const left = total - ayah.numberInSurah + (state.pos >= plan.stream.length ? 0 : 1);
+  const pct = (typedTotal() / TOTAL_AYAHS) * 100;
+  const percent = pct === 0 ? "0" : pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.floor(pct);
   el.progressLabel.textContent =
-    `${surah.englishName} · Ayah ${ayah.numberInSurah} of ${surah.ayahs.length}` +
-    ` · Juz ${ayah.juz} · ${percent}% of the Quran`;
+    `${surah.englishName} · Ayah ${ayah.numberInSurah} of ${total} · ` +
+    (left ? `${left} left` : "surah done") +
+    ` · Juz ${ayah.juz} · ${percent}% of the Quran typed`;
 }
 
 // ---- Typing ---------------------------------------------------------------
+
+const isContinueKey = (ch) => ch === " " || ch === "\n";
 
 function handleKey(ch) {
   if (busy) {
     heldKeys.push(ch);
     return;
   }
+  if (scoring) {
+    if (isContinueKey(ch)) leaveScore();
+    return;
+  }
   if (!plan) return;
   if (waiting) {
-    // Letters typed after the end wait for Enter; nudge the reader.
-    if (!isForgivable(ch)) nudgeContinue();
+    if (isContinueKey(ch)) {
+      countTime();
+      moveOn();
+    } else if (!isForgivable(ch)) {
+      nudgeContinue();
+    }
     return;
   }
   countTime();
@@ -299,65 +356,130 @@ function handleKey(ch) {
   const expected = plan.stream[state.pos];
   if (expected && matches(expected.ch, ch)) {
     state.pos++;
+    state.run.chars++;
     missed = false;
   } else if (expected && !isForgivable(ch)) {
+    if (!missed) state.run.misses++;
     missed = true;
   }
 
   el.hint.classList.add("gone");
   updateTyping();
-  updateProgress();
   save();
   if (state.pos >= plan.stream.length) finishAyah();
+  else updateProgress();
 }
 
 function finishAyah() {
-  state.ayatTyped++;
-  if (ayah.numberInSurah === surah.ayahs.length && !state.surahsDone.includes(surah.number)) {
-    state.surahsDone.push(surah.number);
-  }
-  if (ayah.number === TOTAL_AYAHS) state.khatamMs = state.typingMs;
+  markTyped();
+  state.run.words += plan.stream.reduce((n, s) => n + (s.ch === " " ? 1 : 0), 1);
+  if (typedTotal() === TOTAL_AYAHS && state.khatamMs == null) state.khatamMs = state.typingMs;
   save();
-  showFinished();
+  updateProgress();
+  el.current.classList.add("finished");
   if (state.autoContinue) {
     busy = true;
     setTimeout(moveOn, 700);
   } else {
-    waiting = true;
-    el.continueButton.hidden = false;
+    waitForContinue();
   }
 }
 
-// The ayah number fills with gold.
-const showFinished = () => el.current.classList.add("finished");
+// A small ↵ key sits at the end of the typed ayah; Enter, Space or a tap
+// on it carries on.
+function waitForContinue() {
+  waiting = true;
+  el.current.classList.add("finished");
+  const key = document.createElement("button");
+  key.type = "button";
+  key.className = "enter-key";
+  key.textContent = "↵";
+  key.title = "Press Enter or Space to continue";
+  key.setAttribute("aria-label", "Continue (Enter or Space)");
+  key.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (waiting) moveOn();
+    focusTyping();
+  });
+  el.translation.append(" ", key);
+  if (state.continueHints < 3) {
+    state.continueHints++;
+    el.hint.textContent = "Press Enter or Space to go on.";
+    el.hint.classList.remove("gone");
+  }
+}
 
 function nudgeContinue() {
-  el.continueButton.classList.remove("nudge");
-  void el.continueButton.offsetWidth;
-  el.continueButton.classList.add("nudge");
+  const key = el.translation.querySelector(".enter-key");
+  if (!key) return;
+  key.classList.remove("nudge");
+  void key.offsetWidth;
+  key.classList.add("nudge");
 }
 
 function moveOn() {
-  if (ayah.number === TOTAL_AYAHS) {
-    waiting = true;
-    showStatus(`Alhamdulillah, you have typed the whole Quran in ${formatLong(state.khatamMs ?? state.typingMs)}.`);
-    return;
-  }
   waiting = false;
   busy = true;
-  el.continueButton.hidden = true;
-  moveIntoTrail().then(nextAyah);
+  el.hint.classList.add("gone");
+  el.translation.querySelector(".enter-key")?.remove();
+  const lastInSurah = ayah.numberInSurah === surah.ayahs.length;
+  moveIntoTrail().then(() => (lastInSurah ? showScore() : loadAyah(surah.number, ayah.numberInSurah + 1)));
 }
 
-function nextAyah() {
-  if (ayah.numberInSurah < surah.ayahs.length) loadAyah(surah.number, ayah.numberInSurah + 1);
-  else loadAyah(surah.number + 1, 1);
+// ---- Surah score page ---------------------------------------------------------
+
+function showScore() {
+  const run = state.run;
+  const minutes = run.ms / 60000;
+  const wpm = minutes > 0 ? Math.round(run.chars / 5 / minutes) : 0;
+  const accuracy = run.chars + run.misses ? Math.round((run.chars / (run.chars + run.misses)) * 100) : 100;
+  state.results[surah.number] = { words: run.words, wpm, accuracy, ms: run.ms };
+  state.run = null;
+  save();
+
+  el.scoreArabic.textContent = surah.name;
+  el.scoreTitle.textContent = `${surah.englishName} complete`;
+  el.scoreWords.textContent = run.words.toLocaleString();
+  el.scoreWpm.textContent = wpm;
+  el.scoreAccuracy.textContent = `${accuracy}%`;
+  el.scoreTime.textContent = formatClock(run.ms);
+  const done = typedTotal() === TOTAL_AYAHS;
+  el.scoreNote.hidden = !done;
+  if (done) el.scoreNote.textContent = `Alhamdulillah, you have typed the whole Quran in ${formatLong(state.khatamMs ?? state.typingMs)}.`;
+  el.scoreNext.textContent = surah.number < 114 ? "Continue" : "Back to the start";
+  el.scoreNext.dataset.next = surah.number < 114 ? surah.number + 1 : 1;
+  el.scoreNext.insertAdjacentHTML("beforeend", ' <kbd>↵</kbd>');
+
+  el.current.hidden = true;
+  el.score.hidden = false;
+  el.score.classList.add("arriving");
+  requestAnimationFrame(() => requestAnimationFrame(() => el.score.classList.remove("arriving")));
+  el.progressFill.style.width = "100%";
+  scoring = true;
+  busy = false;
+  heldKeys = [];
 }
+
+function hideScore() {
+  scoring = false;
+  el.score.hidden = true;
+}
+
+function leaveScore() {
+  const next = Number(el.scoreNext.dataset.next);
+  clearTrail();
+  loadAyah(next, 1);
+}
+el.scoreNext.addEventListener("click", () => {
+  leaveScore();
+  focusTyping();
+});
 
 // ---- Finished ayat trail ------------------------------------------------------
 
-// Finished ayat collect below the one being typed, newest first. The
-// finished ayah glides down into its place there before the next appears.
+// Finished ayat of the current surah collect below the one being typed,
+// newest first. The finished ayah glides down into its place there before
+// the next appears.
 const TRAIL_LENGTH = 20;
 
 function makeTrailItem() {
@@ -443,13 +565,7 @@ el.catcher.addEventListener("compositionend", () => {
 el.catcher.addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
   e.preventDefault();
-  if (!waiting) return;
-  countTime();
-  moveOn();
-});
-el.continueButton.addEventListener("click", () => {
-  if (waiting) moveOn();
-  focusTyping();
+  if (waiting || scoring) handleKey("\n");
 });
 
 const focusTyping = () => {
@@ -465,14 +581,14 @@ el.catcher.addEventListener("blur", () => el.typing.classList.add("blurred"));
 document.addEventListener("keydown", (e) => {
   if (document.activeElement === el.catcher || document.querySelector("dialog[open]")) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  const onControl = document.activeElement?.closest("button, select, input");
-  if (e.key === "Enter" && waiting && !onControl) {
+  const onControl = document.activeElement?.closest("button, select, input, summary");
+  if ((e.key === "Enter" || e.key === " ") && onControl) return;
+  if (e.key === "Enter" && (waiting || scoring)) {
     e.preventDefault();
-    moveOn();
+    handleKey("\n");
     return;
   }
   if (e.key.length !== 1) return;
-  if (onControl && e.key === " ") return;
   focusTyping();
 });
 
@@ -540,8 +656,8 @@ const hideStatus = () => (el.status.hidden = true);
 
 el.timerButton.addEventListener("click", async () => {
   el.statTime.textContent = formatClock(liveTypingMs());
-  el.statAyat.textContent = state.ayatTyped.toLocaleString();
-  el.statSurahs.textContent = state.surahsDone.length;
+  el.statAyat.textContent = typedTotal().toLocaleString();
+  el.statSurahs.textContent = "–";
   el.statNote.textContent = state.khatamMs
     ? `You typed the whole Quran in ${formatLong(state.khatamMs)}.`
     : state.startedOn
@@ -552,23 +668,26 @@ el.timerButton.addEventListener("click", async () => {
   el.surahTimes.replaceChildren();
   el.stats.showModal();
 
-  const typed = Object.keys(state.surahMs).map(Number).sort((a, b) => a - b);
-  if (!typed.length) return;
-  let names = [];
+  let list = [];
   try {
-    names = await getSurahList();
+    list = await getSurahList();
   } catch {
     // Names are a nicety; numbers alone still read fine.
   }
-  const rows = typed.map((n) => {
+  el.statSurahs.textContent = list.length
+    ? list.filter((s) => isSurahDone(s.number, s.numberOfAyahs)).length
+    : "–";
+  const timed = Object.keys(state.surahMs).map(Number).sort((a, b) => a - b);
+  const rows = timed.map((n) => {
     const row = document.createElement("div");
     row.className = "surah-time";
     const name = document.createElement("span");
-    name.textContent = `${n}. ${names[n - 1]?.englishName ?? "Surah " + n}`;
+    name.textContent = `${n}. ${list[n - 1]?.englishName ?? "Surah " + n}`;
     const time = document.createElement("span");
     time.className = "surah-time-value";
-    time.textContent = formatClock(state.surahMs[n]);
-    if (state.surahsDone.includes(n)) {
+    const result = state.results[n];
+    time.textContent = formatClock(state.surahMs[n]) + (result ? ` · ${result.wpm} wpm · ${result.accuracy}%` : "");
+    if (list[n - 1] && isSurahDone(n, list[n - 1].numberOfAyahs)) {
       const tick = document.createElement("span");
       tick.className = "surah-done";
       tick.textContent = "finished";
@@ -583,19 +702,20 @@ el.timerButton.addEventListener("click", async () => {
 el.resetButton.addEventListener("click", () => {
   if (!el.resetButton.dataset.armed) {
     el.resetButton.dataset.armed = "1";
-    el.resetButton.textContent = "Tap again to clear your time and start at Al-Fatihah";
+    el.resetButton.textContent = "Tap again to clear your progress and start at Al-Fatihah";
     return;
   }
   Object.assign(state, {
     surah: 1,
     ayah: 1,
     pos: 0,
+    typed: {},
     typingMs: 0,
     surahMs: {},
-    surahsDone: [],
-    ayatTyped: 0,
     startedOn: null,
     khatamMs: null,
+    run: null,
+    results: {},
   });
   lastKeyAt = 0;
   saveNow();
@@ -662,24 +782,71 @@ el.setTheme.addEventListener("change", () => {
   save();
 });
 
-// ---- Go to surah ------------------------------------------------------------
+// ---- Surah index ------------------------------------------------------------
+
+function goTo(surahNumber, ayahNumber) {
+  el.jump.close();
+  clearTrail();
+  loadAyah(surahNumber, ayahNumber, 0);
+}
 
 el.surahButton.addEventListener("click", async () => {
   el.jump.showModal();
+  let list;
   try {
-    const list = await getSurahList();
-    if (el.jumpSurah.options.length !== list.length) {
-      el.jumpSurah.replaceChildren(
-        ...list.map((s) => new Option(`${s.number}. ${s.englishName} (${s.englishNameTranslation})`, s.number)),
-      );
-    }
-    el.jumpSurah.value = state.surah;
-    el.jumpAyah.value = state.ayah;
-    el.jumpAyah.max = list[state.surah - 1].numberOfAyahs;
+    list = await getSurahList();
   } catch {
     el.jump.close();
     showStatus("Couldn't load the list of surahs.");
+    return;
   }
+
+  const next = await nextUntyped();
+  el.khatamButton.disabled = !next;
+  el.khatamNext.textContent = next
+    ? `${list[next.surah - 1].englishName}, ayah ${next.ayah}`
+    : "Every ayah is typed. Alhamdulillah.";
+  el.khatamButton.onclick = () => next && goTo(next.surah, next.ayah);
+
+  el.surahIndex.replaceChildren(
+    ...list.map((s) => {
+      const typed = typedInSurah(s.number);
+      const done = typed === s.numberOfAyahs;
+      const row = document.createElement("button");
+      row.type = "button";
+      row.setAttribute("role", "listitem");
+      row.className = "surah-row" + (done ? " done" : "") + (s.number === state.surah ? " here" : "");
+      const num = document.createElement("span");
+      num.className = "surah-row-num";
+      num.textContent = s.number;
+      const name = document.createElement("span");
+      name.className = "surah-row-name";
+      name.textContent = s.englishName;
+      const meta = document.createElement("span");
+      meta.className = "surah-row-meta";
+      meta.textContent = done ? "finished" : typed ? `${typed} / ${s.numberOfAyahs}` : `${s.numberOfAyahs} ayat`;
+      const bar = document.createElement("span");
+      bar.className = "surah-row-bar";
+      bar.style.setProperty("--done", `${(typed / s.numberOfAyahs) * 100}%`);
+      row.append(num, name, meta, bar);
+      // Open at the first ayah not typed yet, or the start if it is finished.
+      row.addEventListener("click", () => {
+        const i = state.typed[s.number]?.indexOf("0") ?? 0;
+        goTo(s.number, done || i < 0 ? 1 : i + 1);
+      });
+      return row;
+    }),
+  );
+  el.surahIndex.querySelector(".here")?.scrollIntoView({ block: "center" });
+
+  if (el.jumpSurah.options.length !== list.length) {
+    el.jumpSurah.replaceChildren(
+      ...list.map((s) => new Option(`${s.number}. ${s.englishName}`, s.number)),
+    );
+  }
+  el.jumpSurah.value = state.surah;
+  el.jumpAyah.value = state.ayah;
+  el.jumpAyah.max = list[state.surah - 1].numberOfAyahs;
 });
 
 el.jumpSurah.addEventListener("change", async () => {
@@ -695,6 +862,7 @@ el.jump.addEventListener("close", () => {
     clearTrail();
     loadAyah(Number(el.jumpSurah.value), ayahNumber, 0);
   }
+  el.jump.returnValue = "";
   focusTyping();
 });
 el.settings.addEventListener("close", focusTyping);

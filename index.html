@@ -46,7 +46,18 @@
                autocapitalize="off" spellcheck="false" enterkeyhint="next" aria-label="Type the translation here">
       </div>
     </section>
-    <button class="continue" id="continue" type="button" hidden>Press <kbd>Enter</kbd> to continue</button>
+    <section class="score" id="score" hidden aria-live="polite">
+      <p class="score-arabic" id="score-arabic" lang="ar" dir="rtl"></p>
+      <h2 class="score-title" id="score-title"></h2>
+      <div class="score-stats">
+        <div class="score-stat"><span class="score-value" id="score-words">0</span><span class="score-label">words</span></div>
+        <div class="score-stat"><span class="score-value" id="score-wpm">0</span><span class="score-label">words per minute</span></div>
+        <div class="score-stat"><span class="score-value" id="score-accuracy">0%</span><span class="score-label">accuracy</span></div>
+        <div class="score-stat"><span class="score-value" id="score-time">0:00</span><span class="score-label">typing time</span></div>
+      </div>
+      <p class="score-note" id="score-note" hidden></p>
+      <button class="button score-next" id="score-next" type="button"></button>
+    </section>
     <p class="hint" id="hint">Start typing to begin. Punctuation fills in by itself.</p>
     <p class="status" id="status" role="status" hidden></p>
     <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>
@@ -125,21 +136,31 @@
     </form>
   </dialog>
 
-  <dialog class="sheet" id="jump">
+  <dialog class="sheet sheet-tall" id="jump">
     <form method="dialog" id="jump-form">
-      <h2 class="sheet-title">Go to</h2>
-      <label class="field">
-        <span>Surah</span>
-        <select id="jump-surah"></select>
-      </label>
-      <label class="field">
-        <span>Ayah</span>
-        <input type="number" id="jump-ayah" min="1" value="1" inputmode="numeric">
-      </label>
-      <div class="sheet-actions">
-        <button class="button button-quiet" value="cancel" formnovalidate>Cancel</button>
-        <button class="button" value="go">Go</button>
+      <div class="sheet-head">
+        <h2 class="sheet-title">Surahs</h2>
+        <button class="button button-quiet" value="cancel" formnovalidate>Close</button>
       </div>
+      <button class="khatam-button" id="khatam-button" type="button">
+        <strong>Continue my khatam</strong>
+        <span id="khatam-next"></span>
+      </button>
+      <div class="surah-index" id="surah-index" role="list"></div>
+      <details class="exact">
+        <summary>Go to a specific ayah</summary>
+        <div class="exact-row">
+          <label class="field">
+            <span>Surah</span>
+            <select id="jump-surah"></select>
+          </label>
+          <label class="field field-narrow">
+            <span>Ayah</span>
+            <input type="number" id="jump-ayah" min="1" value="1" inputmode="numeric">
+          </label>
+          <button class="button" value="go">Go</button>
+        </div>
+      </details>
     </form>
   </dialog>
 </body>
