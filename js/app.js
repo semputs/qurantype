@@ -306,6 +306,7 @@ function updateTyping() {
 }
 
 // The caret glides under the next letter to type.
+let caretSpan = null; // where the caret is heading (it glides, so its own box lags)
 function placeCaret(span) {
   el.caret.classList.toggle("miss", missed);
   if (!span) {
@@ -313,25 +314,25 @@ function placeCaret(span) {
     return;
   }
   el.caret.hidden = false;
+  caretSpan = span;
   const top = span.offsetTop + span.offsetHeight - 6;
   el.caret.style.width = `${Math.max(span.offsetWidth, 6)}px`;
   el.caret.style.transform = `translate(${span.offsetLeft}px, ${top}px)`;
   followCaret(span);
 }
 
-// Open each new ayah from its top, just under the header. If the Arabic is
-// so long that the caret would start off screen, scroll on to the caret.
+// Open each new ayah at the top of the page. Only when the Arabic is so long
+// that the caret would start off screen, scroll down just far enough to see it.
 function showNewAyah() {
-  const header = document.querySelector(".bar").offsetHeight;
-  let shift = $("stage").getBoundingClientRect().top - header - 16;
-  if (!el.caret.hidden) {
-    const limit = innerHeight - Math.max(140, innerHeight * 0.28);
-    const caretBottom = el.caret.getBoundingClientRect().bottom - shift;
-    if (caretBottom > limit) shift += caretBottom - limit;
+  let target = 0;
+  if (!el.caret.hidden && caretSpan) {
+    const limit = innerHeight - 90; // the footer is hidden while typing
+    const caretBottom = caretSpan.getBoundingClientRect().bottom + scrollY;
+    if (caretBottom > limit) target = caretBottom - limit;
   }
-  if (Math.abs(shift) < 2) return;
+  if (Math.abs(scrollY - target) < 2) return;
   const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-  scrollBy({ top: shift, behavior: smooth ? "smooth" : "auto" });
+  scrollTo({ top: target, behavior: smooth ? "smooth" : "auto" });
 }
 
 // On long ayat, keep the line being typed in view: once it gets near the
@@ -714,6 +715,8 @@ function autotypeStep() {
   const next = plan.stream[state.pos];
   if (next) handleKey(next.ch);
 }
+// Only shown when the page is opened with ?debug in its address.
+if (new URLSearchParams(location.search).has("debug")) $("debug-button").hidden = false;
 $("debug-button").addEventListener("click", () => {
   if (autotype) {
     clearInterval(autotype);
