@@ -30,6 +30,8 @@ const el = {
   status: $("status"),
   trail: $("trail"),
   progressFill: $("progress-fill"),
+  surahProgressFill: $("surah-progress-fill"),
+  surahProgressLabel: $("surah-progress-label"),
   progressLabel: $("progress-label"),
   welcome: $("welcome"),
   welcomeChoices: $("welcome-choices"),
@@ -318,7 +320,10 @@ document.fonts?.ready.then(() => plan && updateTyping());
 function updateProgress() {
   const total = surah.ayahs.length;
   const within = plan.stream.length ? state.pos / plan.stream.length : 0;
-  el.progressFill.style.width = `${(((ayah.numberInSurah - 1 + within) / total) * 100).toFixed(2)}%`;
+  const surahWidth = `${(((ayah.numberInSurah - 1 + within) / total) * 100).toFixed(2)}%`;
+  el.progressFill.style.width = surahWidth;
+  el.surahProgressFill.style.width = surahWidth;
+  el.surahProgressLabel.textContent = `Ayah ${ayah.numberInSurah} of ${total}`;
   const left = total - ayah.numberInSurah + (state.pos >= plan.stream.length ? 0 : 1);
   const pct = (typedTotal() / TOTAL_AYAHS) * 100;
   const percent = pct === 0 ? "0" : pct < 1 ? pct.toFixed(2) : pct < 10 ? pct.toFixed(1) : Math.floor(pct);
@@ -458,7 +463,7 @@ function showScore() {
   });
   el.score.classList.add("arriving");
   requestAnimationFrame(() => requestAnimationFrame(() => el.score.classList.remove("arriving")));
-  el.progressFill.style.width = "100%";
+  el.progressFill.style.width = el.surahProgressFill.style.width = "100%";
   scoring = true;
   busy = false;
   heldKeys = [];
