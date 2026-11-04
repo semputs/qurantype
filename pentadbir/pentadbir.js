@@ -121,7 +121,7 @@ function barChart(title, days, value, show) {
   return box;
 }
 
-// A ranked list with a thin meter per row.
+// A ranked list with a pink bar per row.
 function split(title, counts, name, limit = 8) {
   const box = document.createElement("div");
   box.className = "split";
@@ -141,20 +141,60 @@ function split(title, counts, name, limit = 8) {
     const li = document.createElement("li");
     li.innerHTML = '<span class="k"></span><span class="n"></span><span class="meter"><span></span></span>';
     li.querySelector(".k").textContent = name(key);
-    li.querySelector(".n").textContent = `${fmt(n)} · ${Math.round((n / total) * 100)}%`;
+    li.querySelector(".n").textContent = fmt(n);
+    const pct = document.createElement("small");
+    pct.textContent = `${Math.round((n / total) * 100)}%`;
+    li.querySelector(".n").append(pct);
     li.querySelector(".meter span").style.width = `${(n / rows[0][1]) * 100}%`;
     list.append(li);
   }
   if (rows.length > limit) {
     const rest = rows.slice(limit).reduce((sum, [, n]) => sum + n, 0);
     const li = document.createElement("li");
-    li.innerHTML = '<span class="k"></span><span class="n"></span>';
+    li.innerHTML = '<span class="k"></span><span class="n"></span><span></span>';
     li.querySelector(".k").textContent = `${rows.length - limit} more`;
     li.querySelector(".n").textContent = fmt(rest);
     list.append(li);
   }
   box.append(list);
   return box;
+}
+
+// One row per day with visitors, newest first, like GalType's "Last 14 days".
+const DAILY_COLUMNS = [
+  ["Day (KL)", (d) => d.day],
+  ["Visitors", (d) => d.visitors],
+  ["Typed", (d) => d.typists],
+  ["Ayat", (d) => d.ayat],
+  ["Surahs", (d) => d.surahs],
+];
+function dailyTable(days) {
+  const rows = days.slice(-14).reverse().filter((d) => d.visitors > 0);
+  if (!rows.length) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = "No visitors in the last 14 days";
+    return [p];
+  }
+  const table = document.createElement("table");
+  const head = table.createTHead().insertRow();
+  for (const [label] of DAILY_COLUMNS) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = label;
+    head.append(th);
+  }
+  const body = table.createTBody();
+  for (const d of rows) {
+    const tr = body.insertRow();
+    DAILY_COLUMNS.forEach(([, value], i) => {
+      const td = tr.insertCell();
+      const v = value(d);
+      td.textContent = i === 0 ? v : fmt(v || 0);
+      if (i > 0 && !v) td.className = "zero";
+    });
+  }
+  return [table];
 }
 
 function sumDays(days) {
@@ -187,6 +227,8 @@ function draw(data) {
     tile("Surahs finished", fmt(t.surahs), t.scores ? `${ta.wpm} wpm · ${ta.accuracy} accuracy` : null),
     tile("Sync codes made", fmt(t.syncCreated)),
   );
+
+  $("daily").replaceChildren(...dailyTable(days));
 
   $("charts").replaceChildren(
     barChart("Visitors", days, (d) => d.visitors, fmt),
