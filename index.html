@@ -88,6 +88,7 @@
           <div class="score-stat"><span class="score-value" id="score-accuracy">0%</span><span class="score-label">accuracy</span></div>
           <div class="score-stat"><span class="score-value" id="score-time">0:00</span><span class="score-label">typing time</span></div>
         </div>
+        <p class="score-span" id="score-span" hidden></p>
         <p class="score-note" id="score-note" hidden></p>
         <button class="button score-next" id="score-next" type="button"></button>
       </section>
@@ -96,6 +97,8 @@
     <p class="status" id="status" role="status" hidden></p>
     <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>
   </main>
+
+  <aside class="pause-panel history" id="pause-panel" aria-label="Today and typing history"></aside>
 
   <button class="debug-button" id="debug-button" type="button" hidden aria-pressed="false" title="Debug: type by itself at 200 words per minute">
     <span class="debug-dot" aria-hidden="true"></span>Autotype
@@ -158,7 +161,7 @@
       <section class="sync" aria-labelledby="sync-title">
         <h3 class="sheet-label" id="sync-title">Continue on another device</h3>
         <div class="sync-body" id="sync-off">
-          <p class="stat-note">Get a sync code of three words, then enter it on your other device. Your place, typed ayat and typing time stay the same on both.</p>
+          <p class="stat-note">Get a sync code of three words, then enter it on your other device. Your place, typed ayat and typing times stay the same on both.</p>
           <button class="button" id="sync-create" type="button">Get a sync code</button>
           <div class="sync-use">
             <label class="field">
@@ -189,11 +192,14 @@
     <form method="dialog">
       <h2 class="sheet-title">My progress</h2>
       <div class="stat-row">
-        <div class="stat"><span class="stat-value" id="stat-time">0:00</span><span class="stat-label">typing time</span></div>
+        <div class="stat"><span class="stat-value" id="stat-time">0:00</span><span class="stat-label">this khatam</span></div>
+        <div class="stat"><span class="stat-value" id="stat-lifetime">0:00</span><span class="stat-label">lifetime</span></div>
         <div class="stat"><span class="stat-value" id="stat-ayat">0</span><span class="stat-label">ayat typed</span></div>
         <div class="stat"><span class="stat-value" id="stat-surahs">0</span><span class="stat-label">surahs finished</span></div>
       </div>
       <p class="stat-note" id="stat-note"></p>
+      <ol class="khatam-list" id="khatam-list" hidden></ol>
+      <div class="history history-sheet" id="stats-history"></div>
       <div class="surah-times" id="surah-times"></div>
       <div class="sheet-actions sheet-actions-split">
         <button class="button button-quiet" id="reset-button" type="button">Start a new khatam</button>
