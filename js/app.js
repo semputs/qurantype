@@ -34,6 +34,7 @@ const el = {
   scoreWpm: $("score-wpm"),
   scoreAccuracy: $("score-accuracy"),
   scoreTime: $("score-time"),
+  scoreSpan: $("score-span"),
   scoreNote: $("score-note"),
   scoreNext: $("score-next"),
   hint: $("hint"),
@@ -205,6 +206,10 @@ function countTime() {
     state.surahMs[surah.number] = (state.surahMs[surah.number] || 0) + delta;
     if (state.run) state.run.ms += delta;
   }
+  if (state.run?.days) {
+    const today = dayKey();
+    if (state.run.days.at(-1) !== today) state.run.days.push(today);
+  }
   if (!state.startedOn) state.startedOn = new Date().toISOString().slice(0, 10);
   lastKeyAt = now;
   notePaused();
@@ -278,7 +283,7 @@ async function loadAyah(surahNumber, ayahNumber, pos = 0) {
     state.pos = Math.min(pos, plan.stream.length);
     typingMsAtLoad = state.typingMs;
     if (state.run?.surah !== surah.number) {
-      state.run = { surah: surah.number, chars: 0, misses: 0, words: 0, ms: 0 };
+      state.run = { surah: surah.number, chars: 0, misses: 0, words: 0, ms: 0, days: [] }; // days: local dates typed on
     }
     save();
     keepTrailSteady(() => {
@@ -532,12 +537,25 @@ function moveOn() {
 
 // ---- Surah score page ---------------------------------------------------------
 
+// "Typed on 5 days, from 1 January to 31 January 2026." Days counted are the
+// ones with typing in this surah, not every day in between.
+function spanText(days) {
+  if (!days.length) return "";
+  const today = dayKey();
+  const short = (k) => new Date(k + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "long" });
+  if (days.length === 1) return days[0] === today ? "Started and finished today." : `Typed in one day, ${longDate(days[0] + "T12:00")}.`;
+  const sameYear = days[0].slice(0, 4) === days.at(-1).slice(0, 4);
+  const from = sameYear ? short(days[0]) : longDate(days[0] + "T12:00");
+  return `Typed on ${days.length} days, from ${from} to ${longDate(days.at(-1) + "T12:00")}.`;
+}
+
 function showScore() {
   const run = state.run;
   const minutes = run.ms / 60000;
   const wpm = minutes > 0 ? Math.round(run.chars / 5 / minutes) : 0;
   const accuracy = run.chars + run.misses ? Math.round((run.chars / (run.chars + run.misses)) * 100) : 100;
-  state.results[surah.number] = { words: run.words, wpm, accuracy, ms: run.ms };
+  const days = run.days ?? [];
+  state.results[surah.number] = { words: run.words, wpm, accuracy, ms: run.ms, ...(days.length && { from: days[0], to: days.at(-1), days: days.length }) };
   trackSurah(surah.number, wpm, accuracy);
   addSurah(state.days);
   state.run = null;
@@ -549,6 +567,8 @@ function showScore() {
   el.scoreWpm.textContent = wpm;
   el.scoreAccuracy.textContent = `${accuracy}%`;
   el.scoreTime.textContent = formatClock(run.ms);
+  el.scoreSpan.textContent = spanText(days);
+  el.scoreSpan.hidden = !days.length;
   const done = typedTotal() === TOTAL_AYAHS;
   el.scoreNote.hidden = !done;
   if (done) el.scoreNote.textContent = `Alhamdulillah, you have typed the whole Quran in ${formatLong(state.khatamMs ?? state.typingMs)}.`;
@@ -1056,7 +1076,7 @@ el.timerButton.addEventListener("click", async () => {
     const time = document.createElement("span");
     time.className = "surah-time-value";
     const result = state.results[n];
-    time.textContent = formatClock(state.surahMs[n]) + (result ? ` · ${result.wpm} wpm · ${result.accuracy}%` : "");
+    time.textContent = formatClock(state.surahMs[n]) + (result ? ` · ${result.wpm} wpm · ${result.accuracy}%` : "") + (result?.days > 1 ? ` · ${result.days} days` : "");
     if (list[n - 1] && isSurahDone(n, list[n - 1].numberOfAyahs)) {
       const tick = document.createElement("span");
       tick.className = "surah-done";

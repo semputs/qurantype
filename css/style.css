@@ -540,6 +540,7 @@ body.focus .foot { opacity: 0; pointer-events: none; }
 .score-value { font-size: clamp(1.4rem, 4.5vw, 2rem); font-variant-numeric: tabular-nums; color: var(--ink); }
 .score-label { font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-soft); }
 .score-note { margin: 0; color: var(--ink); }
+.score-span { margin: 0; font-size: 0.9rem; color: var(--ink-soft); text-wrap: balance; }
 .score-next { display: inline-flex; align-items: center; gap: 10px; }
 .score-next kbd {
   font: inherit;
