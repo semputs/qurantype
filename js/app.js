@@ -54,6 +54,8 @@ const el = {
   setFrame: $("set-frame"),
   stats: $("stats"),
   statTime: $("stat-time"),
+  statLifetime: $("stat-lifetime"),
+  khatamList: $("khatam-list"),
   statAyat: $("stat-ayat"),
   statSurahs: $("stat-surahs"),
   statNote: $("stat-note"),
@@ -100,6 +102,9 @@ const DEFAULTS = {
   surahMs: {},
   startedOn: null, // ISO date of the first keystroke of this khatam
   khatamMs: null, // total time when the last untyped ayah was typed
+  // Kept through "Start a new khatam": all typing ever, and each finished khatam.
+  lifetimeMs: null, // null until filled in from typingMs for progress saved before this existed
+  khatams: [], // [{ ms, startedOn, finishedOn }], oldest first
   // The surah being typed right now, for its score page.
   run: null, // { surah, chars, misses, words, ms }
   results: {}, // surah number -> { words, wpm, accuracy, ms } from its last finish
@@ -115,7 +120,17 @@ function loadState() {
   }
 }
 
+// Progress saved before lifetime time existed starts its lifetime clock at
+// this khatam's time, and keeps a khatam it already finished.
+function fillLifetime(s) {
+  if (s.lifetimeMs == null) {
+    s.lifetimeMs = s.typingMs;
+    if (s.khatamMs != null && !s.khatams.length) s.khatams = [{ ms: s.khatamMs, startedOn: s.startedOn, finishedOn: null }];
+  }
+}
+
 const state = loadState();
+fillLifetime(state);
 // savedAt only moves when something really changed, so just opening the page
 // on a device never makes its copy look newer than the other device's.
 const withoutStamp = () => JSON.stringify({ ...state, savedAt: 0 });
@@ -181,6 +196,7 @@ function countTime() {
   if (lastKeyAt) {
     const delta = Math.min(now - lastKeyAt, PAUSE_MS);
     state.typingMs += delta;
+    state.lifetimeMs += delta;
     state.surahMs[surah.number] = (state.surahMs[surah.number] || 0) + delta;
     if (state.run) state.run.ms += delta;
   }
@@ -188,10 +204,9 @@ function countTime() {
   lastKeyAt = now;
 }
 
-function liveTypingMs() {
-  if (!lastKeyAt) return state.typingMs;
-  return state.typingMs + Math.min(performance.now() - lastKeyAt, PAUSE_MS);
-}
+const liveExtra = () => (lastKeyAt ? Math.min(performance.now() - lastKeyAt, PAUSE_MS) : 0);
+const liveTypingMs = () => state.typingMs + liveExtra();
+const liveLifetimeMs = () => state.lifetimeMs + liveExtra();
 
 function formatClock(ms) {
   const total = Math.floor(ms / 1000);
@@ -451,6 +466,7 @@ function finishAyah() {
   trackAyah(surah.number, words, state.typingMs - typingMsAtLoad);
   if (typedTotal() === TOTAL_AYAHS && state.khatamMs == null) {
     state.khatamMs = state.typingMs;
+    state.khatams = [...state.khatams, { ms: state.khatamMs, startedOn: state.startedOn, finishedOn: new Date().toISOString().slice(0, 10) }];
     trackKhatam();
   }
   save();
@@ -908,18 +924,31 @@ const hideStatus = () => (el.status.hidden = true);
 
 // ---- My progress --------------------------------------------------------------
 
+const longDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+
 el.timerButton.addEventListener("click", async () => {
   el.statTime.textContent = formatClock(liveTypingMs());
+  el.statLifetime.textContent = formatClock(liveLifetimeMs());
   el.statAyat.textContent = typedTotal().toLocaleString();
   el.statSurahs.textContent = "–";
   el.statNote.textContent = state.khatamMs
     ? `You typed the whole Quran in ${formatLong(state.khatamMs)}.`
     : state.startedOn
-      ? `Counting since ${new Date(state.startedOn).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}. The clock pauses after ${PAUSE_MS / 1000} seconds without typing.`
+      ? `This khatam counting since ${longDate(state.startedOn)}. The clock pauses after ${PAUSE_MS / 1000} seconds without typing.`
       : "The clock starts with your first keystroke and pauses when you stop typing.";
   el.resetButton.textContent = "Start a new khatam";
   el.resetButton.dataset.armed = "";
   el.surahTimes.replaceChildren();
+  el.khatamList.replaceChildren(
+    ...state.khatams.map((k, i) => {
+      const li = document.createElement("li");
+      const when = k.finishedOn ? `, finished ${longDate(k.finishedOn)}` : "";
+      li.textContent = `Khatam ${i + 1}: ${formatLong(k.ms)}${when}`;
+      return li;
+    }),
+  );
+  // One finished khatam that is still the current one is already in the note above.
+  el.khatamList.hidden = !state.khatams.length || (state.khatams.length === 1 && state.khatamMs != null);
   el.stats.showModal();
 
   let list = [];
@@ -956,7 +985,7 @@ el.timerButton.addEventListener("click", async () => {
 el.resetButton.addEventListener("click", () => {
   if (!el.resetButton.dataset.armed) {
     el.resetButton.dataset.armed = "1";
-    el.resetButton.textContent = "Tap again to clear your progress and start at Al-Fatihah";
+    el.resetButton.textContent = "Tap again to clear this khatam and start at Al-Fatihah (lifetime time is kept)";
     return;
   }
   Object.assign(state, {
@@ -1078,6 +1107,7 @@ function useRemote(remote) {
   if (!remote?.state?.translation) return;
   for (const key of Object.keys(state)) delete state[key];
   Object.assign(state, DEFAULTS, remote.state, { savedAt: remote.savedAt });
+  fillLifetime(state);
   lastSaved = withoutStamp();
   lastKeyAt = 0;
   saveNow();
