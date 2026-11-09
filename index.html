@@ -97,6 +97,8 @@
     <ol class="trail" id="trail" aria-label="Ayat you have typed"></ol>
   </main>
 
+  <aside class="pause-panel history" id="pause-panel" aria-label="Today and typing history"></aside>
+
   <button class="debug-button" id="debug-button" type="button" hidden aria-pressed="false" title="Debug: type by itself at 200 words per minute">
     <span class="debug-dot" aria-hidden="true"></span>Autotype
   </button>
@@ -196,6 +198,7 @@
       </div>
       <p class="stat-note" id="stat-note"></p>
       <ol class="khatam-list" id="khatam-list" hidden></ol>
+      <div class="history history-sheet" id="stats-history"></div>
       <div class="surah-times" id="surah-times"></div>
       <div class="sheet-actions sheet-actions-split">
         <button class="button button-quiet" id="reset-button" type="button">Start a new khatam</button>

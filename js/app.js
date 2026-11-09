@@ -2,6 +2,7 @@ import { TRANSLATIONS, RECITERS, TOTAL_AYAHS, getSurah, getSurahList } from "./a
 import { buildPlan, matches, filledUpTo, isForgivable } from "./typing.js";
 import { FRAMES, frameBox } from "./frame.js";
 import { trackVisit, trackPrefs, trackAyah, trackSurah, trackKhatam } from "./stats.js";
+import { dayKey, addTime, addAyah, addSurah, monthsToShow, monthGrid, rangeLines } from "./history.js";
 import { savedCode, rememberCode, showCode, parseCode, linkFor, codeFromLink, createCode, fetchCode, pushState } from "./sync.js";
 
 const $ = (id) => document.getElementById(id);
@@ -55,6 +56,8 @@ const el = {
   stats: $("stats"),
   statTime: $("stat-time"),
   statLifetime: $("stat-lifetime"),
+  statsHistory: $("stats-history"),
+  pausePanel: $("pause-panel"),
   khatamList: $("khatam-list"),
   statAyat: $("stat-ayat"),
   statSurahs: $("stat-surahs"),
@@ -105,6 +108,7 @@ const DEFAULTS = {
   // Kept through "Start a new khatam": all typing ever, and each finished khatam.
   lifetimeMs: null, // null until filled in from typingMs for progress saved before this existed
   khatams: [], // [{ ms, startedOn, finishedOn }], oldest first
+  days: {}, // typing per local day, see js/history.js
   // The surah being typed right now, for its score page.
   run: null, // { surah, chars, misses, words, ms }
   results: {}, // surah number -> { words, wpm, accuracy, ms } from its last finish
@@ -197,11 +201,13 @@ function countTime() {
     const delta = Math.min(now - lastKeyAt, PAUSE_MS);
     state.typingMs += delta;
     state.lifetimeMs += delta;
+    addTime(state.days, delta);
     state.surahMs[surah.number] = (state.surahMs[surah.number] || 0) + delta;
     if (state.run) state.run.ms += delta;
   }
   if (!state.startedOn) state.startedOn = new Date().toISOString().slice(0, 10);
   lastKeyAt = now;
+  notePaused();
 }
 
 const liveExtra = () => (lastKeyAt ? Math.min(performance.now() - lastKeyAt, PAUSE_MS) : 0);
@@ -461,6 +467,7 @@ function handleKey(ch) {
 
 function finishAyah() {
   markTyped();
+  addAyah(state.days, surah.number, ayah.numberInSurah);
   const words = plan.stream.reduce((n, s) => n + (s.ch === " " ? 1 : 0), 1);
   state.run.words += words;
   trackAyah(surah.number, words, state.typingMs - typingMsAtLoad);
@@ -532,6 +539,7 @@ function showScore() {
   const accuracy = run.chars + run.misses ? Math.round((run.chars / (run.chars + run.misses)) * 100) : 100;
   state.results[surah.number] = { words: run.words, wpm, accuracy, ms: run.ms };
   trackSurah(surah.number, wpm, accuracy);
+  addSurah(state.days);
   state.run = null;
   save();
 
@@ -922,6 +930,84 @@ function showStatus(text, retry) {
 }
 const hideStatus = () => (el.status.hidden = true);
 
+// ---- Today and history ---------------------------------------------------------
+
+// Once the typing clock pauses, the side panel (on screens wide enough to
+// have room beside the ayah) shows today's typing, a calendar of past days
+// and the sync code. It is built only when a pause starts, so typing itself
+// pays nothing for it.
+let pauseTimer;
+function notePaused() {
+  document.body.classList.remove("paused");
+  clearTimeout(pauseTimer);
+  pauseTimer = setTimeout(showPaused, PAUSE_MS);
+}
+function showPaused() {
+  if (matchMedia("(min-width: 1240px)").matches) renderHistory(el.pausePanel);
+  document.body.classList.add("paused");
+}
+
+let surahNames = [];
+getSurahList().then((list) => (surahNames = list.map((s) => s.englishName))).catch(() => {});
+
+function renderHistory(box) {
+  const today = dayKey();
+  const detail = document.createElement("div");
+  detail.className = "history-detail";
+  detail.setAttribute("aria-live", "polite");
+  const months = document.createElement("div");
+  months.className = "history-months";
+  months.append(...monthsToShow(state.days, today).map((m) => monthGrid(m, state.days, today)));
+
+  let pinned = null; // a day tapped, which stays shown until tapped again
+  const show = (key) => {
+    const day = state.days[key];
+    const title = document.createElement("h3");
+    title.className = "history-title";
+    title.textContent = key === today ? "Today" : longDate(key + "T12:00");
+    const stats = document.createElement("div");
+    stats.className = "history-stats";
+    for (const [value, label] of [
+      [formatClock(key === today ? (day?.ms ?? 0) + liveExtra() : day?.ms ?? 0), "typing"],
+      [day?.ayat ?? 0, "ayat"],
+      [day?.surahs ?? 0, day?.surahs === 1 ? "surah" : "surahs"],
+    ]) {
+      const s = document.createElement("span");
+      s.innerHTML = `<b></b><small></small>`;
+      s.firstChild.textContent = value;
+      s.lastChild.textContent = label;
+      stats.append(s);
+    }
+    const ranges = document.createElement("ul");
+    ranges.className = "history-ranges";
+    const lines = rangeLines(day, surahNames);
+    ranges.append(...lines.map((t) => Object.assign(document.createElement("li"), { textContent: t })));
+    if (!lines.length) ranges.append(Object.assign(document.createElement("li"), { className: "history-none", textContent: key === today ? "No ayat typed yet today." : "No ayat typed this day." }));
+    detail.replaceChildren(title, stats, ranges);
+    for (const c of months.querySelectorAll(".cal-day.on")) c.classList.remove("on");
+    months.querySelector(`[data-day="${key}"]`)?.classList.add("on");
+  };
+  months.addEventListener("pointerover", (e) => {
+    const cell = e.target.closest(".cal-day:not(:disabled)");
+    if (cell && e.pointerType === "mouse") show(cell.dataset.day);
+  });
+  months.addEventListener("pointerleave", () => show(pinned ?? today));
+  months.addEventListener("click", (e) => {
+    const cell = e.target.closest(".cal-day:not(:disabled)");
+    if (!cell) return;
+    pinned = pinned === cell.dataset.day ? null : cell.dataset.day;
+    show(pinned ?? today);
+  });
+  months.addEventListener("focusin", (e) => e.target.matches(".cal-day") && show(e.target.dataset.day));
+
+  const sync = document.createElement("p");
+  sync.className = "history-sync";
+  sync.textContent = syncCode ? `Sync code: ${showCode(syncCode)}` : "No sync code yet. Get one in Settings to carry on from another device.";
+
+  box.replaceChildren(detail, months, sync);
+  show(today);
+}
+
 // ---- My progress --------------------------------------------------------------
 
 const longDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
@@ -939,6 +1025,7 @@ el.timerButton.addEventListener("click", async () => {
   el.resetButton.textContent = "Start a new khatam";
   el.resetButton.dataset.armed = "";
   el.surahTimes.replaceChildren();
+  renderHistory(el.statsHistory);
   el.khatamList.replaceChildren(
     ...state.khatams.map((k, i) => {
       const li = document.createElement("li");
@@ -1337,6 +1424,7 @@ function showWelcome() {
 
 function begin() {
   started = true;
+  showPaused();
   trackPrefs(state);
   if (state.pos > 0 || state.surah > 1 || state.ayah > 1) {
     el.hint.textContent = "Welcome back. Carry on typing from where you stopped.";
