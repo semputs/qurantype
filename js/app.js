@@ -104,11 +104,14 @@ const DEFAULTS = {
   // Typing time in milliseconds, overall and per surah.
   typingMs: 0,
   surahMs: {},
-  startedOn: null, // ISO date of the first keystroke of this khatam
+  startedOn: null, // date of the first keystroke of this khatam (local date for new khatams)
+  khatamDays: 0, // days with typing in this khatam, counted only when dayCountFrom === startedOn
+  dayCountFrom: null, // first day khatamDays covers; older progress started before the count existed
+  lastTypedDay: null,
   khatamMs: null, // total time when the last untyped ayah was typed
   // Kept through "Start a new khatam": all typing ever, and each finished khatam.
   lifetimeMs: null, // null until filled in from typingMs for progress saved before this existed
-  khatams: [], // [{ ms, startedOn, finishedOn }], oldest first
+  khatams: [], // [{ ms, startedOn, finishedOn, days? }], oldest first
   days: {}, // typing per local day, see js/history.js
   // The surah being typed right now, for its score page.
   run: null, // { surah, chars, misses, words, ms }
@@ -207,10 +210,14 @@ function countTime() {
     if (state.run) state.run.ms += delta;
   }
   if (state.run?.days) {
-    const today = dayKey();
     if (state.run.days.at(-1) !== today) state.run.days.push(today);
   }
-  if (!state.startedOn) state.startedOn = new Date().toISOString().slice(0, 10);
+  const today = dayKey();
+  if (!state.startedOn) state.startedOn = state.dayCountFrom = today;
+  if (state.lastTypedDay !== today) {
+    state.lastTypedDay = today;
+    state.khatamDays++;
+  }
   lastKeyAt = now;
   notePaused();
 }
@@ -478,7 +485,9 @@ function finishAyah() {
   trackAyah(surah.number, words, state.typingMs - typingMsAtLoad);
   if (typedTotal() === TOTAL_AYAHS && state.khatamMs == null) {
     state.khatamMs = state.typingMs;
-    state.khatams = [...state.khatams, { ms: state.khatamMs, startedOn: state.startedOn, finishedOn: new Date().toISOString().slice(0, 10) }];
+    const finished = { ms: state.khatamMs, startedOn: state.startedOn, finishedOn: dayKey() };
+    if (state.dayCountFrom === state.startedOn) finished.days = state.khatamDays;
+    state.khatams = [...state.khatams, finished];
     trackKhatam();
   }
   save();
@@ -543,10 +552,10 @@ function spanText(days) {
   if (!days.length) return "";
   const today = dayKey();
   const short = (k) => new Date(k + "T12:00").toLocaleDateString(undefined, { day: "numeric", month: "long" });
-  if (days.length === 1) return days[0] === today ? "Started and finished today." : `Typed in one day, ${longDate(days[0] + "T12:00")}.`;
+  if (days.length === 1) return days[0] === today ? "Started and finished today." : `Typed in one day, ${dateText(days[0])}.`;
   const sameYear = days[0].slice(0, 4) === days.at(-1).slice(0, 4);
-  const from = sameYear ? short(days[0]) : longDate(days[0] + "T12:00");
-  return `Typed on ${days.length} days, from ${from} to ${longDate(days.at(-1) + "T12:00")}.`;
+  const from = sameYear ? short(days[0]) : dateText(days[0]);
+  return `Typed on ${days.length} days, from ${from} to ${dateText(days.at(-1))}.`;
 }
 
 function showScore() {
@@ -571,7 +580,7 @@ function showScore() {
   el.scoreSpan.hidden = !days.length;
   const done = typedTotal() === TOTAL_AYAHS;
   el.scoreNote.hidden = !done;
-  if (done) el.scoreNote.textContent = `Alhamdulillah, you have typed the whole Quran in ${formatLong(state.khatamMs ?? state.typingMs)}.`;
+  if (done) el.scoreNote.textContent = `Alhamdulillah, you have typed the whole Quran in ${formatLong(state.khatamMs ?? state.typingMs)}. ${khatamSpan(state.khatams.at(-1))}`;
   el.scoreNext.textContent = surah.number < 114 ? "Continue" : "Back to the start";
   el.scoreNext.dataset.next = surah.number < 114 ? surah.number + 1 : 1;
   el.scoreNext.insertAdjacentHTML("beforeend", ' <kbd>↵</kbd>');
@@ -984,7 +993,7 @@ function renderHistory(box) {
     const day = state.days[key];
     const title = document.createElement("h3");
     title.className = "history-title";
-    title.textContent = key === today ? "Today" : longDate(key + "T12:00");
+    title.textContent = key === today ? "Today" : dateText(key);
     const stats = document.createElement("div");
     stats.className = "history-stats";
     for (const [value, label] of [
@@ -1031,6 +1040,18 @@ function renderHistory(box) {
 // ---- My progress --------------------------------------------------------------
 
 const longDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+// A "2026-11-09" date as written, read as that day on this device rather than UTC midnight.
+const dateText = (key) => longDate(key + "T12:00");
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// "You started on 1 January 2026 and finished on 31 March 2026, typing on 45 days."
+function khatamSpan(k) {
+  if (!k?.startedOn) return "";
+  const days = k.days ? `, typing on ${plural(k.days, "day")}` : "";
+  return k.finishedOn
+    ? `You started on ${dateText(k.startedOn)} and finished on ${dateText(k.finishedOn)}${days}.`
+    : `You started on ${dateText(k.startedOn)}.`;
+}
 
 el.timerButton.addEventListener("click", async () => {
   el.statTime.textContent = formatClock(liveTypingMs());
@@ -1038,9 +1059,9 @@ el.timerButton.addEventListener("click", async () => {
   el.statAyat.textContent = typedTotal().toLocaleString();
   el.statSurahs.textContent = "–";
   el.statNote.textContent = state.khatamMs
-    ? `You typed the whole Quran in ${formatLong(state.khatamMs)}.`
+    ? `You typed the whole Quran in ${formatLong(state.khatamMs)}. ${khatamSpan(state.khatams.at(-1))}`
     : state.startedOn
-      ? `This khatam counting since ${longDate(state.startedOn)}. The clock pauses after ${PAUSE_MS / 1000} seconds without typing.`
+      ? `You started this khatam on ${dateText(state.startedOn)}${state.dayCountFrom === state.startedOn ? ` and have typed on ${plural(state.khatamDays, "day")} so far` : ""}. The clock pauses after ${PAUSE_MS / 1000} seconds without typing.`
       : "The clock starts with your first keystroke and pauses when you stop typing.";
   el.resetButton.textContent = "Start a new khatam";
   el.resetButton.dataset.armed = "";
@@ -1049,8 +1070,7 @@ el.timerButton.addEventListener("click", async () => {
   el.khatamList.replaceChildren(
     ...state.khatams.map((k, i) => {
       const li = document.createElement("li");
-      const when = k.finishedOn ? `, finished ${longDate(k.finishedOn)}` : "";
-      li.textContent = `Khatam ${i + 1}: ${formatLong(k.ms)}${when}`;
+      li.textContent = `Khatam ${i + 1}: ${formatLong(k.ms)}. ${khatamSpan(k)}`;
       return li;
     }),
   );
@@ -1103,6 +1123,9 @@ el.resetButton.addEventListener("click", () => {
     typingMs: 0,
     surahMs: {},
     startedOn: null,
+    khatamDays: 0,
+    dayCountFrom: null,
+    lastTypedDay: null,
     khatamMs: null,
     run: null,
     results: {},
