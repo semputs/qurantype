@@ -45,6 +45,21 @@
         <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" /></svg>
         <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 5.5h3v13h-3zM13.5 5.5h3v13h-3z" /></svg>
       </button>
+      <div class="volume" id="volume">
+        <button class="icon-button" id="volume-button" type="button" aria-label="Recitation volume" aria-haspopup="true" aria-expanded="false" aria-controls="volume-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="speaker" d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3z" />
+            <path class="wave wave-1" d="M15 9.5a3.5 3.5 0 0 1 0 5" />
+            <path class="wave wave-2" d="M17.5 7a7 7 0 0 1 0 10" />
+            <path class="slash" d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+          </svg>
+        </button>
+        <div class="volume-panel" id="volume-panel" hidden>
+          <button class="volume-mute" id="volume-mute" type="button" aria-pressed="false">Mute</button>
+          <input class="volume-slider" id="volume-slider" type="range" min="0" max="100" step="1" value="100" aria-label="Recitation volume">
+          <span class="volume-value" id="volume-value">100%</span>
+        </div>
+      </div>
       <button class="icon-button" id="settings-button" type="button" aria-label="Settings" aria-haspopup="dialog">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" /><circle cx="16" cy="7" r="2" /><circle cx="10" cy="17" r="2" /></svg>
       </button>

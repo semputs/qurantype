@@ -190,6 +190,87 @@ body.focus .foot { opacity: 0; pointer-events: none; }
 #play-button.playing .icon-pause { display: block; }
 #play-button.playing { color: var(--gold); }
 
+/* Recitation volume: a speaker button with a small panel under it */
+.volume { position: relative; }
+#volume-button .slash { display: none; }
+.volume.low #volume-button .wave-2 { display: none; }
+.volume.silent #volume-button .wave { display: none; }
+.volume.silent #volume-button .slash { display: block; }
+.volume.open #volume-button { background: var(--paper-deep); color: var(--ink); }
+.volume-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+.volume-panel[hidden] { display: none; }
+.volume-mute {
+  min-width: 72px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+}
+.volume-mute:hover { background: var(--paper-deep); color: var(--ink); }
+.volume-mute[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.volume-slider {
+  --fill: 100%;
+  width: min(160px, 40vw);
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.volume-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--gold) var(--fill), var(--line) var(--fill));
+}
+.volume-slider::-moz-range-track { height: 3px; border-radius: 3px; background: var(--line); }
+.volume-slider::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--gold); }
+.volume-slider.muted::-moz-range-progress { background: transparent; }
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.volume-slider::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--gold); }
+.volume-slider.muted::-webkit-slider-thumb { background: var(--ink-soft); }
+.volume-slider.muted::-moz-range-thumb { background: var(--ink-soft); }
+.volume-value {
+  min-width: 3.4em;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* On a phone the panel spans the width under the header instead */
+@media (max-width: 520px) {
+  .volume { position: static; }
+  .volume-panel { left: 16px; right: 16px; top: calc(100% - 4px); justify-content: space-between; }
+  .volume-slider { width: auto; flex: 1; }
+}
+
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 /* Ayah */
@@ -808,3 +889,10 @@ body.focus .foot { opacity: 0; pointer-events: none; }
 
 /* Flying copies must never widen the page */
 body { overflow-x: clip; }
+
+/* Small phones: the header holds four buttons, so draw them a little tighter */
+@media (max-width: 400px) {
+  .bar-actions { gap: 0; }
+  .bar-actions .icon-button { width: 34px; }
+  .timer-button { padding: 0 6px 0 4px; gap: 4px; }
+}

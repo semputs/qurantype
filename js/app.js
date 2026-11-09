@@ -12,6 +12,12 @@ const el = {
   timerButton: $("timer-button"),
   timer: $("timer"),
   play: $("play-button"),
+  volume: $("volume"),
+  volumeButton: $("volume-button"),
+  volumePanel: $("volume-panel"),
+  volumeMute: $("volume-mute"),
+  volumeSlider: $("volume-slider"),
+  volumeValue: $("volume-value"),
   settingsButton: $("settings-button"),
   current: $("current"),
   basmalah: $("basmalah"),
@@ -804,6 +810,85 @@ function updatePlayButton() {
   el.play.title = "Play recitation (Tab replays it while typing)";
 }
 ["play", "pause", "ended", "emptied", "error"].forEach((ev) => audio.addEventListener(ev, updatePlayButton));
+
+// ---- Volume -----------------------------------------------------------------
+
+// Kept apart from the synced progress: how loud the recitation plays belongs
+// to this device (speakers, earphones), not to the reader.
+const VOLUME_KEY = "qurantype:volume";
+const sound = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(VOLUME_KEY) || "{}");
+    return {
+      volume: Number.isFinite(saved.volume) ? Math.min(1, Math.max(0, saved.volume)) : 1,
+      muted: saved.muted === true,
+    };
+  } catch {
+    return { volume: 1, muted: false };
+  }
+})();
+
+function applySound() {
+  audio.volume = sound.volume;
+  audio.muted = sound.muted;
+  const silent = sound.muted || sound.volume === 0;
+  const pct = Math.round(sound.volume * 100);
+  el.volume.classList.toggle("silent", silent);
+  el.volume.classList.toggle("low", !silent && sound.volume < 0.5);
+  el.volumeSlider.value = pct;
+  el.volumeSlider.style.setProperty("--fill", `${sound.muted ? 0 : pct}%`);
+  el.volumeSlider.classList.toggle("muted", sound.muted);
+  el.volumeValue.textContent = sound.muted ? "Muted" : `${pct}%`;
+  el.volumeMute.textContent = sound.muted ? "Unmute" : "Mute";
+  el.volumeMute.setAttribute("aria-pressed", String(sound.muted));
+  el.volumeButton.setAttribute("aria-label", sound.muted ? "Recitation volume (muted)" : `Recitation volume (${pct}%)`);
+  el.volumeButton.title = sound.muted ? "Recitation muted" : `Recitation volume ${pct}%`;
+}
+function saveSound() {
+  try {
+    localStorage.setItem(VOLUME_KEY, JSON.stringify(sound));
+  } catch {
+    // Storage blocked: the setting lasts until the page closes.
+  }
+}
+
+function openVolume(open) {
+  el.volumePanel.hidden = !open;
+  el.volumeButton.setAttribute("aria-expanded", String(open));
+  el.volume.classList.toggle("open", open);
+}
+el.volumeButton.addEventListener("click", () => {
+  const open = el.volumePanel.hidden;
+  openVolume(open);
+  if (open) el.volumeSlider.focus({ preventScroll: true });
+  else focusTyping();
+});
+el.volumeMute.addEventListener("click", () => {
+  sound.muted = !sound.muted;
+  // Unmuting at zero would still be silent, so bring it back to half.
+  if (!sound.muted && sound.volume === 0) sound.volume = 0.5;
+  applySound();
+  saveSound();
+});
+el.volumeSlider.addEventListener("input", () => {
+  sound.volume = Number(el.volumeSlider.value) / 100;
+  // Moving the slider means they want to hear it.
+  if (sound.volume > 0) sound.muted = false;
+  applySound();
+  saveSound();
+});
+// The panel closes on a click elsewhere, on Escape, or when typing resumes.
+addEventListener("pointerdown", (e) => {
+  if (!el.volumePanel.hidden && !el.volume.contains(e.target)) openVolume(false);
+});
+el.volume.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    openVolume(false);
+    focusTyping();
+  }
+});
+el.catcher.addEventListener("focus", () => openVolume(false));
+applySound();
 
 // ---- Status line ------------------------------------------------------------
 
